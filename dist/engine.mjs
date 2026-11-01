@@ -15,6 +15,8 @@ export function sampleState() {
   ] };
 }
 const finite = x => typeof x === 'number' && Number.isFinite(x);
+const NORMAL_99_Z = 2.3263478740408408;
+const normalPdf = z => Math.exp(-0.5*z*z)/Math.sqrt(2*Math.PI);
 export function validate(state) {
   const errors = [];
   if (!state || typeof state !== 'object' || Array.isArray(state)) return ['Saved inputs must be an object.'];
@@ -64,7 +66,7 @@ export function calculate(state) {
   const exposureSum = weights.reduce((s,w,i)=>s+w*vols[i],0);
   const assets = state.assets.map((a,i)=>({ ...a, effectiveShock:shocks[i], pnl:state.value*weights[i]*shocks[i], contribution:weights[i]*shocks[i], riskShare:stressedVariance > 0 ? weights[i]*vols[i]*((1-state.stressCorrelation)*weights[i]*vols[i]+state.stressCorrelation*exposureSum)/stressedVariance : 0 }));
   const comparisons = Object.entries(PRESETS).map(([id,p])=>({id,name:p.name,return:weights.reduce((s,w,i)=>s+w*Math.max(-1,p.shocks[state.assets[i].group]/100*state.multiplier),0)}));
-  return { portfolioReturn, pnl:state.value*portfolioReturn, endValue:state.value*(1+portfolioReturn), drawdown:Math.max(0,-portfolioReturn), baselineSigma, stressedSigma, equalSigma, hhi, effectiveAssets:1/hhi, horizonScale, baselineDownside:1.6448536269514722*baselineSigma*horizonScale, stressedDownside:1.6448536269514722*stressedSigma*horizonScale, equalReturn:equal.reduce((s,w,i)=>s+w*shocks[i],0), largestWeight:Math.max(...weights), assets, comparisons, curve:Array.from({length:21},(_,i)=>({rho:i/20,sigma:Math.sqrt(variance(weights,vols,i/20))*horizonScale})), capped:state.assets.some(a=>a.shock/100*state.multiplier < -1) };
+  return { portfolioReturn, pnl:state.value*portfolioReturn, endValue:state.value*(1+portfolioReturn), drawdown:Math.max(0,-portfolioReturn), baselineSigma, stressedSigma, equalSigma, hhi, effectiveAssets:1/hhi, horizonScale, baselineDownside:1.6448536269514722*baselineSigma*horizonScale, stressedDownside:1.6448536269514722*stressedSigma*horizonScale, stressedDownside99:NORMAL_99_Z*stressedSigma*horizonScale, stressedExpectedShortfall95:normalPdf(1.6448536269514722)/0.05*stressedSigma*horizonScale, stressedExpectedShortfall99:normalPdf(NORMAL_99_Z)/0.01*stressedSigma*horizonScale, equalReturn:equal.reduce((s,w,i)=>s+w*shocks[i],0), largestWeight:Math.max(...weights), assets, comparisons, curve:Array.from({length:21},(_,i)=>({rho:i/20,sigma:Math.sqrt(variance(weights,vols,i/20))*horizonScale})), capped:state.assets.some(a=>a.shock/100*state.multiplier < -1) };
 }
 export function reverseStress(state, options) {
   const errors = validate(state);

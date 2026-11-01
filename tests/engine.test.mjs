@@ -41,7 +41,20 @@ test('positive and zero shocks produce zero drawdown and correct P&L',()=>{
 test('all zero volatilities have zero variance and zero risk shares',()=>{
   const s=twoAssets();s.assets.forEach(a=>a.volatility=0);const r=calculate(s);
   close(r.stressedSigma,0);close(r.baselineSigma,0);close(r.stressedDownside,0);
+  close(r.stressedDownside99,0);close(r.stressedExpectedShortfall95,0);close(r.stressedExpectedShortfall99,0);
   r.assets.forEach(a=>close(a.riskShare,0));r.curve.forEach(p=>close(p.sigma,0));
+});
+test('Gaussian downside and expected shortfall use stressed horizon volatility only',()=>{
+  const s=twoAssets(),r=calculate(s),horizonSigma=r.stressedSigma*r.horizonScale;
+  const z95=1.6448536269514722,z99=2.3263478740408408,pdf=z=>Math.exp(-z*z/2)/Math.sqrt(2*Math.PI);
+  assert.equal(r.stressedDownside,z95*r.stressedSigma*r.horizonScale);
+  close(r.stressedDownside99,z99*horizonSigma);
+  close(r.stressedExpectedShortfall95,pdf(z95)/.05*horizonSigma);
+  close(r.stressedExpectedShortfall99,pdf(z99)/.01*horizonSigma);
+  const rescaled=calculate({...s,days:1});
+  close(rescaled.stressedDownside99,r.stressedDownside99/Math.sqrt(365));
+  close(rescaled.stressedExpectedShortfall95,r.stressedExpectedShortfall95/Math.sqrt(365));
+  close(rescaled.stressedExpectedShortfall99,r.stressedExpectedShortfall99/Math.sqrt(365));
 });
 test('single asset volatility independent of correlation',()=>{
   const s=twoAssets();s.assets=[{...s.assets[0],weight:100}];const r=calculate(s);

@@ -9,7 +9,7 @@ A standalone, browser-only crypto portfolio risk stress tester. Enter asset allo
 - Adjustable shock intensity, baseline/stressed common correlation, and risk horizon.
 - Scenario return and drawdown comparisons, volatility sensitivity chart, allocation chart, and asset-level attribution.
 - Reverse stress testing by portfolio, asset, or group, with a target loss in percent or USD and an explicit unreachable result.
-- HHI, effective position count, equal-weight comparisons, and one-sided 95% normal-model downside.
+- HHI, effective position count, equal-weight comparisons, and 95%/99% normal-model downside and expected shortfall using stressed volatility.
 - Explicit weight normalization and validation, browser-local input persistence, and CSV export.
 - Responsive layouts for phones, tablets, and desktop browsers.
 
@@ -39,7 +39,7 @@ npm run check
 npm run e2e
 ```
 
-Run `npm ci` to install the browser-test dependency and `npx playwright install chromium` once to install its browser. The Node test suite contains 45 tests, including persistence restore, validation of malformed assets, CSV row generation, escaping and formula neutralization, 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication, and reverse-stress fixtures and properties. The Playwright suite exercises the app in Chromium. Browser verification details are recorded in VERIFICATION.md.
+Run `npm ci` to install the browser-test dependency and `npx playwright install chromium` once to install its browser. The Node test suite contains 47 tests, including persistence restore, validation of malformed assets, CSV row generation, escaping and formula neutralization, 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication, reverse-stress fixtures and properties, and Gaussian tail-risk checks. The Playwright suite exercises the app in Chromium. Browser verification details are recorded in VERIFICATION.md.
 
 Set `PW_CHROME_PATH` to an installed Chrome or Chromium executable to use it instead of running `npx playwright install chromium` (for example, `PW_CHROME_PATH=/usr/bin/chromium npm run e2e`).
 
@@ -74,7 +74,7 @@ Weights must total 100%; the model covers long-only spot portfolios. Effective a
 
 All off-diagonal asset correlations use one common value rho between 0 and 1. Annual variance = (1 − rho) × sum((weight × annual volatility)^2) + rho × (sum(weight × annual volatility))^2. This produces a valid covariance matrix. Horizon volatility = annual volatility × sqrt(days / 365). Correlation and horizon affect model risk but do not change the deterministic event shocks.
 
-The one-sided 95% normal downside assumes zero expected return and uses z = 1.6448536269514722. It is not a forecast or feasible spot-loss bound and can exceed 100%. No simulation is used.
+Normal-model downside and expected shortfall use only stressed horizon volatility and assume zero expected return with normally distributed returns. Downside at confidence c is zᶜ × σ; expected shortfall is φ(zᶜ) / (1 − c) × σ. The one-sided z-scores are 1.6448536269514722 at 95% and 2.3263478740408408 at 99%. These are not forecasts or feasible spot-loss bounds and can exceed 100%. No simulation is used.
 
 Reverse stress testing solves for the instantaneous uniform price shock to selected assets that reaches a positive target loss, entered as a portfolio percentage or USD amount. Portfolio mode includes every holding, including stablecoins and cash; asset and group modes include only their selected holdings, while all other assets remain unchanged. The model assumes long-only spot positions and enforces a −100% price floor. A target is unreachable when the selected exposure cannot lose enough value, including an empty selection or zero-weight selection. Reverse stress has no dependence on correlation, horizon, volatility, intensity, or per-asset base shocks. It excludes fees, slippage, liquidity constraints, and price-path effects. Reverse-stress controls are kept in memory for the current page session and are not persisted.
 
@@ -82,7 +82,7 @@ Concentration uses HHI = sum(weight^2) and effective positions = 1 / HHI. The eq
 
 Sample inputs are illustrative assumptions. Fees, slippage, liquidity, leverage, liquidation, taxes, rebalancing, fat tails, and intraperiod paths are outside this model. The in-app “Behind the numbers” section explains the formulas.
 
-Inputs persist in browser-local storage when available. Invalid edits do not overwrite the last valid saved state. CSV exports include the assumptions and calculated results; formula-like user strings are neutralized. Large P&L summary values use compact notation while exact values remain available in details, attribution, and exports.
+Inputs persist in browser-local storage when available. Invalid edits do not overwrite the last valid saved state. CSV exports include the assumptions and calculated results; tail-risk metrics are appended after the existing Limitations row, and all existing CSV rows remain unchanged and in the same order. Formula-like user strings are neutralized. Large P&L summary values use compact notation while exact values remain available in details, attribution, and exports.
 
 ## Files
 
