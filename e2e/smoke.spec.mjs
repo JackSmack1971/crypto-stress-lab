@@ -165,6 +165,46 @@ test('fits the page within a 375px viewport', async ({ page }) => {
   }
 });
 
+test('sensitivity heatmap selects metrics, marks nearest settings, and scrolls by keyboard', async ({ page }) => {
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  const state=savedDemoState();state.preset='custom';
+  state.assets[0]={...state.assets[0],weight:20,shock:300};
+  state.assets[1]={...state.assets[1],weight:80,shock:-100};
+  state.assets[2]={...state.assets[2],weight:0,shock:-100};
+  state.assets[3]={...state.assets[3],weight:0,shock:-100};
+  await page.addInitScript(saved=>localStorage.setItem('crypto-stress-lab:v1',JSON.stringify(saved)),state);
+  await page.setViewportSize({width:375,height:812});await openApp(page);
+  const metric=page.locator('#sensitivity-metric'),table=page.locator('#sensitivity-table');
+  await expect(metric).toHaveValue('volatility');
+  await expect(page.locator('#sensitivity-note')).toContainText('rows are identical');
+  await expect(table.locator('caption')).toContainText('Horizon volatility');
+  await expect(page.locator('[data-current-setting="true"]')).toHaveCount(1);
+  await expect(page.locator('[data-current-setting="true"]')).toHaveAttribute('data-rho','0.8');
+  const initial=await table.locator('tbody tr').nth(0).locator('td').nth(0).textContent();
+  await metric.selectOption('scenarioReturn');
+  await expect(page.locator('#sensitivity-note')).toContainText('columns are identical');
+  const changed=await table.locator('tbody tr').nth(0).locator('td').nth(0).textContent();
+  expect(changed).not.toBe(initial);
+  const colors=await table.locator('tbody tr').evaluateAll(rows=>[0,1,12].map(index=>rows[index].cells[1].style.backgroundColor.match(/[\d.]+/g).slice(0,3).map(Number)));
+  expect(colors[1][0]).toBeGreaterThan(colors[1][1]);
+  expect(colors[0]).toEqual([40,48,60]);
+  expect(colors[2][1]).toBeGreaterThan(colors[2][0]);
+  const scroll=page.locator('.heatmap-scroll');await scroll.focus();await expect(scroll).toBeFocused();
+  await expect(scroll).toHaveAttribute('tabindex','0');
+  const scrollBefore=await scroll.evaluate(element=>element.scrollLeft);await page.keyboard.press('ArrowRight');
+  expect(await scroll.evaluate(element=>element.scrollLeft)).toBeGreaterThan(scrollBefore);
+  const contrast=await table.locator('tbody td').evaluateAll(cells=>cells.map(cell=>{
+    const rgb=getComputedStyle(cell).color.match(/[\d.]+/g).slice(0,3).map(Number);
+    const bg=getComputedStyle(cell).backgroundColor.match(/[\d.]+/g).slice(0,3).map(Number);
+    const luminance=values=>values.map(value=>{const channel=value/255;return channel<=.04045?channel/12.92:((channel+.055)/1.055)**2.4;}).reduce((sum,value,index)=>sum+value*[.2126,.7152,.0722][index],0);
+    const light=luminance(rgb),dark=luminance(bg);return (Math.max(light,dark)+.05)/(Math.min(light,dark)+.05);
+  }));
+  expect(Math.min(...contrast)).toBeGreaterThanOrEqual(4.5);
+  const dimensions=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
+  expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+  expect(errors).toEqual([]);
+});
+
 test('reverse stress updates locally and keeps its validation out of the global banner', async ({ page }) => {
   await openApp(page);
   await expect(page.locator('#reverse-result')).toContainText('−20.00%');

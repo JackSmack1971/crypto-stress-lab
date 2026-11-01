@@ -1,4 +1,4 @@
-import { PRESETS, GROUPS, sampleState, validate, calculate, normalizeWeights, reverseStress } from './engine.mjs';
+import { PRESETS, GROUPS, sampleState, validate, calculate, normalizeWeights, reverseStress, sensitivityGrid } from './engine.mjs';
 import { restoreState, serializeCsv, toCsvRows } from './persistence.mjs';
 const $ = id => document.getElementById(id);
 const STORAGE_KEY = 'crypto-stress-lab:v1';
@@ -95,6 +95,53 @@ function renderResults(r) {
   $('attribution').innerHTML=r.assets.map((a,i)=>`<tr><th scope="row">${coin(a,i)}${esc(a.symbol.toUpperCase())}</th><td class="numeric">${num(a.weight)}%</td><td class="numeric ${a.effectiveShock<0?'negative':a.effectiveShock>0?'positive':''}">${signedPct(a.effectiveShock)}</td><td class="numeric ${a.pnl<0?'negative':a.pnl>0?'positive':''}">${signedMoney(a.pnl)}</td><td class="numeric">${r.stressedSigma===0?'—':pct(a.riskShare,1)}</td></tr>`).join('');
   $('table-return').textContent=signedPct(r.portfolioReturn);$('table-pnl').textContent=signedMoney(r.pnl);$('table-risk').textContent=r.stressedSigma===0?'—':'100.0%';
   scenarioChart(r);correlationChart(r);allocationChart(r);
+  renderSensitivity(r);
+}
+function nearestAxisIndex(axis,value) {
+  return axis.reduce((best,item,index)=>Math.abs(item-value)<Math.abs(axis[best]-value)-1e-12?index:best,0);
+}
+function renderSensitivity(r) {
+  const grid=sensitivityGrid(state),metric=$('sensitivity-metric').value;
+  const matrix=grid[metric],values=matrix.flat(),minimum=Math.min(...values),maximum=Math.max(...values);
+  $('sensitivity-panel').classList.toggle('scenario-return-metric',metric==='scenarioReturn');
+  const rhoIndex=nearestAxisIndex(grid.rho,state.stressCorrelation),intensityIndex=nearestAxisIndex(grid.intensity,state.multiplier);
+  const current=metric==='volatility'?r.stressedSigma*r.horizonScale:metric==='var99'?r.stressedDownside99:r.portfolioReturn;
+  const metricName=metric==='volatility'?'Horizon volatility':metric==='var99'?'99% model downside (VaR)':'Scenario return';
+  $('sensitivity-note').textContent=metric==='volatility'?'Volatility does not depend on shock intensity; rows are identical.':metric==='var99'?'99% model downside (VaR) does not depend on shock intensity; rows are identical.':'Scenario return does not depend on stressed correlation; columns are identical.';
+  const exactCurrent=metric==='scenarioReturn'?`${current<0?'−':current>0?'+':''}${num(Math.abs(current)*100,4)}%`:`${num(current*100,4)}%`;
+  $('sensitivity-current').textContent=`${metricName} at current settings (ρ ${num(state.stressCorrelation,2)}, intensity ${num(state.multiplier,2)}×): ${exactCurrent}.`;
+  $('sensitivity-min').textContent=metric==='scenarioReturn'?signedPct(minimum):pct(minimum);
+  $('sensitivity-max').textContent=metric==='scenarioReturn'?signedPct(maximum):pct(maximum);
+  const table=$('sensitivity-table'),caption=document.createElement('caption');caption.textContent=`${metricName} by stressed correlation and shock intensity; values are percentages of starting value.`;
+  const head=document.createElement('thead'),headerRow=document.createElement('tr'),corner=document.createElement('th');
+  corner.scope='col';corner.textContent='Intensity ↓ / ρ →';headerRow.append(corner);
+  for(const correlation of grid.rho){const th=document.createElement('th');th.scope='col';th.textContent=num(correlation,1);headerRow.append(th);}
+  head.append(headerRow);
+  const body=document.createElement('tbody');
+  for(let row=0;row<grid.intensity.length;row++){
+    const tr=document.createElement('tr'),rowHeader=document.createElement('th');rowHeader.scope='row';rowHeader.textContent=`${num(grid.intensity[row],2)}×`;tr.append(rowHeader);
+    for(let col=0;col<grid.rho.length;col++){
+      const value=matrix[row][col],cell=document.createElement('td'),t=maximum===minimum?0.5:(value-minimum)/(maximum-minimum);
+      cell.textContent=metric==='scenarioReturn'?signedPct(value):pct(value);
+      cell.style.backgroundColor=sensitivityColor(metric,value,t,minimum,maximum);
+      if(row===intensityIndex&&col===rhoIndex){cell.classList.add('current-sensitivity-cell');cell.dataset.currentSetting='true';cell.dataset.rho=String(grid.rho[col]);cell.dataset.intensity=String(grid.intensity[row]);cell.setAttribute('aria-label',`Current settings: correlation ${num(grid.rho[col],1)}, intensity ${num(grid.intensity[row],2)} times, value ${cell.textContent}`);}
+      tr.append(cell);
+    }
+    body.append(tr);
+  }
+  table.replaceChildren(caption,head,body);
+}
+function sensitivityColor(metric,value,t,minimum,maximum) {
+  if(metric==='scenarioReturn'){
+    if(value<0)return blendColor('#28303c','#743b43',Math.min(1,Math.abs(value/minimum)));
+    if(value>0)return blendColor('#28303c','#276b55',Math.min(1,value/maximum));
+    return '#28303c';
+  }
+  return blendColor('#1b293a','#28674f',t);
+}
+function blendColor(start,end,amount) {
+  const from=start.match(/[a-f\d]{2}/gi).map(hex=>parseInt(hex,16)),to=end.match(/[a-f\d]{2}/gi).map(hex=>parseInt(hex,16));
+  return `#${from.map((value,index)=>Math.round(value+(to[index]-value)*amount).toString(16).padStart(2,'0')).join('')}`;
 }
 function updateReverse() {
   const mode=$('reverse-mode').value, unit=$('reverse-unit').value, select=$('reverse-selection');
@@ -166,3 +213,4 @@ $('reverse-mode').addEventListener('change',updateReverse);
 $('reverse-unit').addEventListener('change',updateReverse);
 $('reverse-selection').addEventListener('change',updateReverse);
 $('reverse-target').addEventListener('input',updateReverse);
+$('sensitivity-metric').addEventListener('change',()=>{if(result)renderSensitivity(result);});
