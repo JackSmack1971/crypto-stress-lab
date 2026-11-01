@@ -52,3 +52,14 @@ test('CSV rows include the asset header and blank risk shares at zero variance',
   assert.deepEqual(rows[headerIndex], ['Asset','Group','Weight %','Annual volatility %','Base shock %','Effective shock %','Scenario P&L USD','Stressed variance risk share %']);
   assert.deepEqual(rows.slice(headerIndex + 1, headerIndex + 1 + state.assets.length).map(row => row[7]), ['', '', '', '']);
 });
+
+test('duplicate asset ids fall back to demo and report invalid data', () => {
+  const demo = sampleState();
+  const duplicateAssets = demo.assets.map(asset => ({ ...asset }));
+  duplicateAssets[1].id = duplicateAssets[0].id;
+  const saved = { ...demo, assets: duplicateAssets };
+  assert.deepEqual(restoreState(JSON.stringify(saved), demo), {
+    state: demo,
+    message: 'Saved inputs were invalid; demo loaded'
+  });
+});

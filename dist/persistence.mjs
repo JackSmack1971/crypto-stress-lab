@@ -6,7 +6,7 @@ export function restoreState(raw, demoState) {
   if (!raw) return { state: demoState, message: '' };
   try {
     const parsed = JSON.parse(raw);
-    if (parsed?.version === 1 && validate(parsed).length === 0 && parsed.assets.every(a => typeof a.id === 'string')) {
+    if (parsed?.version === 1 && validate(parsed).length === 0 && parsed.assets.every(a => typeof a.id === 'string') && new Set(parsed.assets.map(a => a.id)).size === parsed.assets.length) {
       return { state: parsed, message: 'Restored your saved inputs' };
     }
   } catch {

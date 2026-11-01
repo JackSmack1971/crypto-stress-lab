@@ -1,6 +1,6 @@
 # Verification — 2026-11-01
 
-- `npm test`: 13 tests pass, including 300 seeded portfolios cross-checked against explicit covariance matrix multiplication. Hand fixtures cover P&L, event loss, HHI, inverse HHI, risk contributions, correlation endpoints, horizon scaling, normalization, invalid inputs, zero volatility and the −100% per-asset loss floor.
+- Original historical record (2026-11-01): `npm test` reported 13 tests passing, including 300 seeded portfolios cross-checked against explicit covariance matrix multiplication. This is not the live test count. Hand fixtures cover P&L, event loss, HHI, inverse HHI, risk contributions, correlation endpoints, horizon scaling, normalization, invalid inputs, zero volatility and the −100% per-asset loss floor.
 - `npm run check`: ES module syntax checks pass.
 - Financial UI deterministic verifier: 0 errors and 0 review items.
 - Browser: custom BTC shock −40% changed demo drawdown to 36.20%. Reducing stressed correlation to zero left that drawdown unchanged and reduced modeled horizon risk. Reload restored edited inputs. Add/remove asset controls verified after resolving preview HTTP UUID compatibility.

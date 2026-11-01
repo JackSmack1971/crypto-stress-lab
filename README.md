@@ -37,7 +37,7 @@ npm test
 npm run check
 ```
 
-The test suite contains 19 tests, including persistence restore, validation of malformed assets, CSV row generation, escaping and formula neutralization, and 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication. Browser verification details are recorded in VERIFICATION.md.
+The test suite contains 20 tests, including persistence restore, validation of malformed assets, CSV row generation, escaping and formula neutralization, and 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication. Browser verification details are recorded in VERIFICATION.md.
 
 ## Transfer to GitHub
 
