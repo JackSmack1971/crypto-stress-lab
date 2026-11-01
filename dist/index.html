@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Your private crypto portfolio scenario lab. Explore portfolio losses, correlation risk, and concentration with transparent, editable assumptions.">
+  <meta name="theme-color" content="#0d1119">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Crypto Stress Lab — Portfolio risk, made visible</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%237de2c3'/%3E%3Cpath d='M12 36h10l7-19 9 31 6-15h8' fill='none' stroke='%230d1119' stroke-width='5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true"><defs>
+ <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M2 13h5l3-9 4 16 3-8h5"/></symbol>
+ <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+ <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v7L4 19a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2l-6-9V3M7 15h10"/></symbol>
+ <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
+ <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+ <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 15v5h16v-5"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
+ <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+</defs></svg>
+<a class="skip" href="#main">Skip to stress tester</a>
+<aside class="sidebar">
+  <a class="brand" href="#"><span class="brand-icon"><svg><use href="#i-pulse"/></svg></span><span>stress<span class="brand-thin">lab</span><small>CRYPTO PORTFOLIO TOOLS</small></span></a>
+  <div class="workspace"><span class="workspace-avatar">J</span><span>Personal workspace<small>Private environment</small></span><svg class="icon"><use href="#i-lock"/></svg></div>
+  <p class="nav-label">WORKSPACE</p>
+  <nav aria-label="Workspace"><a class="nav-item active" href="#main"><svg class="icon"><use href="#i-flask"/></svg>Stress tester<span class="nav-dot"></span></a><a class="nav-item" href="#portfolio"><svg class="icon"><use href="#i-grid"/></svg>Portfolio inputs</a><a class="nav-item" href="#methodology"><svg class="icon"><use href="#i-info"/></svg>Model & assumptions</a></nav>
+  <div class="sidebar-note"><span class="mini-label">A LITTLE FORESIGHT.</span><p>Understand your exposure.<br>Before the next move.</p><div class="tiny-wave"><svg viewBox="0 0 150 40"><path d="M0 30 15 26 25 31 38 12 49 19 58 7 69 24 82 19 93 27 106 10 117 15 130 5 150 12"/></svg></div></div>
+  <div class="sidebar-footer"><svg class="icon"><use href="#i-lock"/></svg>Owner-only access<small>Hypothetical scenario analysis</small></div>
+</aside>
+<div class="shell">
+ <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong>Stress tester</strong></div><div class="top-actions"><span id="save-status" class="save-status">Browser-local inputs</span><span class="private-badge"><svg class="icon"><use href="#i-lock"/></svg>Private</span><span class="avatar">J</span></div></header>
+ <main id="main">
+  <section class="page-heading"><div><div class="eyebrow"><span></span> PORTFOLIO RISK ENGINE</div><h1>Stress-test your conviction.</h1><p>Explore the downside. See what diversification really changes.</p></div><button class="button secondary" id="export"><svg class="icon"><use href="#i-download"/></svg>Export results</button></section>
+  <div class="model-strip"><span><svg class="icon"><use href="#i-flask"/></svg>Hypothetical inputs <b>·</b> No market feed</span><span id="analysis-status" role="status">Ready</span></div>
+  <div id="errors" class="error-banner" role="alert" hidden></div>
+  <section class="metrics" aria-label="Portfolio summary">
+   <article class="metric"><div class="metric-label">Scenario drawdown <span class="tag">SHOCK</span></div><strong id="metric-drawdown" class="negative">—</strong><div id="metric-end" class="metric-detail">One-step portfolio loss</div></article>
+   <article class="metric"><div class="metric-label">Scenario P&L <span class="tag">USD</span></div><strong id="metric-loss">—</strong><div id="metric-loss-detail" class="metric-detail">Against starting portfolio value</div></article>
+   <article class="metric"><div class="metric-label">Correlation risk change <span class="tag">MODEL</span></div><strong id="metric-uplift">—</strong><div id="metric-uplift-detail" class="metric-detail">Horizon volatility</div></article>
+   <article class="metric"><div class="metric-label">Effective positions <span class="tag">1 / HHI</span></div><strong id="metric-effective">—</strong><div id="metric-concentration" class="metric-detail">Weight-based concentration</div></article>
+  </section>
+  <div class="dashboard">
+   <div class="input-column">
+    <section class="panel portfolio-panel" id="portfolio">
+     <div class="panel-heading"><div><h2>Your portfolio</h2><p>Set your allocation and asset assumptions.</p></div><span class="small-tag">SPOT · LONG ONLY</span></div>
+     <label class="value-label" for="portfolio-value">Starting portfolio value <span>USD</span></label><div class="money-input"><span>$</span><input id="portfolio-value" type="number" min="1" max="1000000000000" step="any" inputmode="decimal"></div>
+     <div class="asset-intro"><span>ASSETS <b id="asset-count">4</b></span><button class="text-button" id="normalize">Normalize weights</button></div>
+     <div id="asset-list"></div>
+     <div class="allocation-total"><span>Total allocation</span><strong id="weight-total">100.00%</strong></div>
+     <button class="add-asset" id="add-asset"><svg class="icon"><use href="#i-plus"/></svg>Add asset</button>
+     <p class="input-help">Annual volatility and shocks are editable assumptions, not estimates from live prices. Groups only map preset shocks.</p>
+    </section>
+    <section class="panel assumptions-panel" id="scenarios">
+     <div class="panel-heading"><div><h2>Scenario assumptions</h2><p>Dial in the conditions you want to test.</p></div><span class="step-number">02</span></div>
+     <label class="field-label" for="scenario">Scenario template</label><select id="scenario"><option value="selloff">Broad selloff</option><option value="liquidity">Liquidity squeeze</option><option value="depeg">Stablecoin depeg</option><option value="rally">Relief rally</option><option value="custom">Custom scenario</option></select>
+     <p id="scenario-description" class="input-help"></p>
+     <div class="range-heading"><label for="intensity">Shock intensity</label><output id="intensity-value" for="intensity">1.00×</output></div><input id="intensity" type="range" min="0" max="3" step="0.05"><div class="range-ends"><span>0× · no shock</span><span>3× · amplified</span></div>
+     <div class="divider"></div>
+     <div class="field-row"><label for="days">Risk horizon <small>Volatility model only</small></label><div class="unit-input"><input id="days" type="number" min="1" max="365" step="1" inputmode="numeric"><span>days</span></div></div>
+     <div class="range-heading"><label for="base-correlation">Baseline correlation</label><output id="base-correlation-value" for="base-correlation">0.35</output></div><input id="base-correlation" type="range" min="0" max="1" step="0.01">
+     <div class="range-heading"><label for="stress-correlation">Stressed correlation</label><output id="stress-correlation-value" for="stress-correlation">0.85</output></div><input id="stress-correlation" type="range" min="0" max="1" step="0.01"><div class="range-ends"><span>0 · independent</span><span>1 · move together</span></div>
+     <button class="button primary" id="run">Run stress test<svg class="icon"><use href="#i-arrow"/></svg></button><p class="auto-update">Results also update as you edit.</p>
+    </section>
+    <button class="text-button reset" id="reset">Reset to demo portfolio</button>
+   </div>
+   <div class="results-column" id="results">
+    <section class="panel scenario-panel"><div class="panel-heading"><div><div class="eyebrow muted">SCENARIO ANALYSIS</div><h2>How much could your portfolio move?</h2><p>Weighted returns across a range of hypothetical shocks.</p></div><span class="small-tag" id="scenario-label">Broad selloff</span></div><div class="chart-legend"><span class="legend-dot accent-dot"></span>Your scenario<span class="legend-dot neutral-dot"></span>Preset comparisons</div><div id="scenario-chart" aria-label="Scenario portfolio return comparison"></div><div class="chart-footnote"><svg class="icon"><use href="#i-info"/></svg>Returns use your weights and shock intensity. Correlation does not change these losses.</div></section>
+    <div class="two-panels">
+     <section class="panel correlation-panel"><div class="panel-heading"><div><h2>When assets move together</h2><p>Portfolio volatility at each correlation.</p></div></div><div class="mini-metrics"><div><span>Baseline</span><strong id="base-sigma">—</strong></div><span class="mini-arrow">→</span><div><span>Stressed</span><strong id="stress-sigma">—</strong></div><span class="horizon-badge" id="horizon-label">30D</span></div><div id="correlation-chart"></div><div class="downside-row"><span>95% model downside <button class="info-button" id="downside-info" aria-label="Read model downside methodology"><svg class="icon"><use href="#i-info"/></svg></button></span><strong id="downside">—</strong></div><p class="input-help">Zero-mean normal model. Not a maximum loss or a forecast.</p></section>
+     <section class="panel concentration-panel"><div class="panel-heading"><div><h2>Concentration check</h2><p>Your weights vs. an equal-weight portfolio.</p></div></div><div class="allocation-visual"><div id="donut"></div><div id="allocation-legend"></div></div><div class="compare-rows"><div class="compare-header"><span>At stressed correlation</span><span>Yours</span><span>Equal</span></div><div><span id="vol-comparison-label">Horizon volatility</span><strong id="actual-vol">—</strong><strong id="equal-vol">—</strong></div><div><span>Scenario return</span><strong id="actual-return">—</strong><strong id="equal-return">—</strong></div></div><p class="input-help" id="concentration-note"></p></section>
+    </div>
+    <section class="panel attribution-panel"><div class="panel-heading"><div><h2>Where the impact comes from</h2><p>Asset-level scenario contributions and modeled risk.</p></div><span class="small-tag">ATTRIBUTION</span></div><div class="table-scroll"><table><thead><tr><th scope="col">Asset</th><th scope="col" class="numeric">Weight</th><th scope="col" class="numeric">Effective shock</th><th scope="col" class="numeric">P&L · USD</th><th scope="col" class="numeric">Risk share</th></tr></thead><tbody id="attribution"></tbody><tfoot><tr><th scope="row">Portfolio</th><td class="numeric">100.00%</td><td class="numeric" id="table-return">—</td><td class="numeric" id="table-pnl">—</td><td class="numeric" id="table-risk">100.0%</td></tr></tfoot></table></div><p class="table-note">Risk share is each asset’s contribution to stressed portfolio variance, not its share of scenario losses.</p></section>
+    <details class="panel methodology" id="methodology"><summary><span><svg class="icon"><use href="#i-info"/></svg>Behind the numbers</span><span class="summary-more">Model & limitations +</span></summary><div class="methodology-body"><h3>Transparent inputs. Reproducible results.</h3><p>This is a long-only, fully invested spot portfolio model. All sample allocations, volatilities, correlations and shocks are illustrative. There is no market feed, wallet connection or trading capability.</p><dl><dt>Scenario return and drawdown</dt><dd>Return = Σ(weight × effective asset shock). Effective shock = entered shock × intensity, floored at −100% per asset. P&L = starting value × return. Drawdown = max(0, −return): a one-step loss, not a historical or simulated peak-to-trough maximum drawdown.</dd><dt>Correlation and volatility</dt><dd>All off-diagonal correlations use one common value ρ between 0 and 1. Annual variance = (1 − ρ)Σ(wᵢσᵢ)² + ρ(Σwᵢσᵢ)². Horizon volatility = annual volatility × √(days / 365). Correlation changes model risk; it does not alter the deterministic scenario return. No simulation is used.</dd><dt>95% model downside</dt><dd>1.64485 × horizon volatility, assuming zero expected return and normally distributed returns. It can exceed 100% and does not represent a feasible spot loss bound. Crypto returns can have jumps, fat tails and changing relationships that this model misses.</dd><dt>Concentration</dt><dd>HHI = Σwᵢ². Effective positions = 1 / HHI. The equal-weight comparison assigns 1/N to every listed asset, including any with 0% current weight. Equal weighting is a comparison, not a recommended allocation.</dd><dt>Scope and saved inputs</dt><dd>Asset shocks apply over your chosen scenario event; changing the risk horizon only scales the volatility model, not the shocks. No fees, slippage, liquidity, leverage, liquidation, taxes, rebalancing or intraperiod path effects are modeled. Inputs are saved in this browser’s local storage when available. Export creates a local CSV of assumptions and results.</dd></dl></div></details>
+   </div>
+  </div>
+  <footer class="main-footer"><span><span class="footer-mark">∿</span> stresslab <b>/</b> Clarity under pressure.</span><span>Illustrative scenarios · USD · v1.0</span></footer>
+ </main>
+</div>
+<div id="toast" class="toast" role="status" hidden></div>
+</body></html>

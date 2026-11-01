@@ -1,0 +1,25 @@
+# Local dependencies and caches
+node_modules/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Environment values and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Platform identity is specific to the original private Site
+.openai/
+
+# Local export/build artifacts
+*.zip
+*.tar.gz
+
+# Control-plane runtime and Python caches
+.codex-runtime/
+__pycache__/
+*.pyc
