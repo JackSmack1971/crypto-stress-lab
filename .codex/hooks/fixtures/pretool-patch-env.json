@@ -1,0 +1,14 @@
+{
+  "session_id": "s1",
+  "transcript_path": null,
+  "cwd": ".",
+  "model": "x",
+  "permission_mode": "default",
+  "hook_event_name": "PreToolUse",
+  "turn_id": "t1",
+  "tool_name": "apply_patch",
+  "tool_use_id": "u1",
+  "tool_input": {
+    "command": "*** Begin Patch\n*** Update File: .env\n@@\n-A=1\n+A=2\n*** End Patch"
+  }
+}

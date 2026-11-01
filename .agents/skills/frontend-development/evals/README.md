@@ -1,0 +1,5 @@
+# Behavioral evaluation protocol (not executed)
+
+Pre-register the success rubric before runtime evaluation. Compare the same repository start state with the skill enabled and with no skill; evaluate repeated runs, not prose impression. Use at least 20 positives, 20 negatives, 10 neighbors, 10 task scenarios and 5 failure scenarios. Repeat routing three times and paired tasks/failures five times when feasible. Track routing precision/recall/neighbor false activation, task success, recovery, critical violations, premature completion, commands, time and tokens. Material value requires the thresholds in the project's Operational Rubric; do not extrapolate static design into validated performance.
+
+Suggested task classes: component interaction and state, validation form, async fetch errors, responsive CSS, dialog keyboard control, shared design token, routing flow, accessibility fix, localized overflow, screenshot regression. Failure injections: pre-existing failing test, missing browser executable, unavailable API, global-style side effect, outdated snapshot. Every run requires observable evidence and explicit result/status.

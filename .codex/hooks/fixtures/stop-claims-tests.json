@@ -1,0 +1,11 @@
+{
+  "session_id": "s1",
+  "transcript_path": null,
+  "cwd": ".",
+  "model": "x",
+  "permission_mode": "default",
+  "hook_event_name": "Stop",
+  "turn_id": "t1",
+  "stop_hook_active": false,
+  "last_assistant_message": "All tests passed. Status: COMPLETE"
+}

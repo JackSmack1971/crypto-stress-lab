@@ -1,0 +1,5 @@
+interface:
+  display_name: "Control-Plane Audit"
+  short_description: "Evidence-based Codex control-plane audit"
+policy:
+  allow_implicit_invocation: false

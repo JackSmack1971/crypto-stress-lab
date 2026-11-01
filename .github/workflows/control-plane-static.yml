@@ -1,0 +1,30 @@
+name: Control plane static checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static validators (offline)
+        run: python -I tools/control_plane/audit_static.py --timeout 30
+      - name: Evaluation scenario structure
+        run: python -I tools/control_plane/evaluate.py check
+      - name: Evaluation negative controls
+        run: python -I tools/control_plane/evaluate.py self-test
+      - name: Unit tests
+        run: |
+          python -I tools/control_plane/test_evaluate.py
+          python -I tools/control_plane/test_review_ledger.py
+          python -I tools/control_plane/test_review_feedback.py
+          python -I tools/control_plane/test_hook_policies.py

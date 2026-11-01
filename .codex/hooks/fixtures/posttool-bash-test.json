@@ -1,0 +1,17 @@
+{
+  "session_id": "s1",
+  "transcript_path": null,
+  "cwd": ".",
+  "model": "x",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUse",
+  "turn_id": "t1",
+  "tool_name": "Bash",
+  "tool_use_id": "u1",
+  "tool_input": {
+    "command": "python -m pytest tests/test_x.py"
+  },
+  "tool_response": {
+    "exit_code": 1
+  }
+}

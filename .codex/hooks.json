@@ -1,0 +1,98 @@
+{
+  "description": "CODEX PRIME lifecycle hooks. Non-managed hooks are skipped until the operator reviews and trusts them in /hooks; any edit to a definition needs re-review. Guardrails, not a security boundary: see .codex/knowledge/hooks.md.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"$(git rev-parse --show-toplevel)/.codex/hooks/session_context.py\"",
+            "commandWindows": "powershell -NoProfile -Command \"py -3 -B (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/session_context.py')\"",
+            "timeout": 10,
+            "statusMessage": "Loading project context"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"$(git rev-parse --show-toplevel)/.codex/hooks/pre_tool_policy.py\"",
+            "commandWindows": "powershell -NoProfile -Command \"py -3 -B (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/pre_tool_policy.py')\"",
+            "timeout": 5,
+            "statusMessage": "Checking project policy"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Bash|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"$(git rev-parse --show-toplevel)/.codex/hooks/permission_policy.py\"",
+            "commandWindows": "powershell -NoProfile -Command \"py -3 -B (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/permission_policy.py')\"",
+            "timeout": 5,
+            "statusMessage": "Checking approval request"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"$(git rev-parse --show-toplevel)/.codex/hooks/execution_evidence.py\"",
+            "commandWindows": "powershell -NoProfile -Command \"py -3 -B (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/execution_evidence.py')\"",
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"$(git rev-parse --show-toplevel)/.codex/hooks/subagent_contract.py\"",
+            "commandWindows": "powershell -NoProfile -Command \"py -3 -B (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/subagent_contract.py')\"",
+            "timeout": 5,
+            "statusMessage": "Loading delegation rules"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"$(git rev-parse --show-toplevel)/.codex/hooks/subagent_contract.py\"",
+            "commandWindows": "powershell -NoProfile -Command \"py -3 -B (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/subagent_contract.py')\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"$(git rev-parse --show-toplevel)/.codex/hooks/completion_gate.py\"",
+            "commandWindows": "powershell -NoProfile -Command \"py -3 -B (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/completion_gate.py')\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

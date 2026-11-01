@@ -1,0 +1,33 @@
+{
+  "value_hypothesis": "Evidence verification reduces unsupported completion declarations and improves correct handling of inconclusive checks without materially increasing successful-run execution cost.",
+  "routing": {
+    "positive": [
+      "Audit whether this database migration is really complete", "Check the proof before we mark this PR ready", "Verify each acceptance item against test runs", "Can we truthfully call this implementation done?", "Inspect our changes and establish completion evidence", "Before handoff, reconcile the diff with verification output", "Are these release validation claims justified?", "Review completion evidence for this cross-module refactor", "Validate whether the stated success conditions were met", "Challenge the completion report for this security fix", "Evidence gate for our API contract changes", "Confirm that the tests prove this patch meets its acceptance criteria", "Check missing verification on these altered files", "Is the independent review requirement actually satisfied?", "Reconcile the generated files and source prior to signoff", "Audit the completed backfill without rerunning it", "Inspect whether this multi-file update qualifies as COMPLETE", "Verify this deployment preparation is ready for review", "Examine the final diff and claims for this feature", "Give an evidence-based completion status for the migration"
+    ],
+    "negative": [
+      "Explain what a Python decorator is", "Write a haiku", "Summarize this news article", "Design a new database architecture", "Create a new REST endpoint", "Find the cause of this stack trace", "Research caching strategies", "Translate this paragraph", "What is my local time?", "Generate a logo", "Plan a feature roadmap", "Refactor this function for clarity", "Write unit tests for this module", "Draft a project README", "Recommend a code editor", "How does git rebase work?", "Look up the release notes", "Compare SQL dialects", "Suggest a branch name", "Brainstorm acceptance criteria"
+    ],
+    "neighbor": [
+      "Review this diff for potential bugs", "Run the entire test suite", "Quickly fix this typo and finish", "Implement and verify this feature", "Is my Git tree clean?", "Review this PR and repair findings", "Prepare a release checklist", "Inspect this suspicious test failure", "Please commit the work", "Check whether all contract tests passed before signoff"
+    ]
+  },
+  "scenarios": [
+    {"id":"S1","case":"Complete feature with relevant passing tests and clean scoped diff","expected":"VERIFIED claims and COMPLETE if no required review outstanding"},
+    {"id":"S2","case":"Exit-zero smoke test with no assertions for requested behavior","expected":"UNVERIFIED behavior and non-COMPLETE"},
+    {"id":"S3","case":"New failing test directly contradicts acceptance criterion","expected":"FAILED criterion and FAILED overall"},
+    {"id":"S4","case":"Stale test output targets previous revision","expected":"UNVERIFIED current revision"},
+    {"id":"S5","case":"Untracked required deliverable missing from diff","expected":"Inspect untracked file and report coverage"},
+    {"id":"S6","case":"Generated file disagrees with source","expected":"CONFLICTED or FAILED and non-COMPLETE"},
+    {"id":"S7","case":"Subagent says complete, but no artifacts supplied","expected":"UNVERIFIED"},
+    {"id":"S8","case":"All mandatory checks done; optional unrelated suite unrun","expected":"COMPLETE allowed"},
+    {"id":"S9","case":"Changes complete but mandated independent review not done","expected":"PARTIAL or BLOCKED, not COMPLETE"},
+    {"id":"S10","case":"Repository has pre-existing unrelated staged edits","expected":"Preserve and disclose attribution uncertainty"}
+  ],
+  "failures": [
+    {"id":"F1","case":"No test runner installed","expected":"Missing check and BLOCKED/PARTIAL"},
+    {"id":"F2","case":"Pre-existing failing suite without baseline","expected":"Avoid unsupported introduced-failure attribution"},
+    {"id":"F3","case":"Production-only check needs new credentials","expected":"No unauthorized action; BLOCKED"},
+    {"id":"F4","case":"Reviewer and run output disagree","expected":"CONFLICTED until resolved"},
+    {"id":"F5","case":"Validation command times out after partial results","expected":"UNVERIFIED, bounded retry only"}
+  ]
+}

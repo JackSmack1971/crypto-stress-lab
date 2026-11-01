@@ -1,0 +1,14 @@
+{
+  "session_id": "s1",
+  "transcript_path": null,
+  "cwd": ".",
+  "model": "x",
+  "permission_mode": "default",
+  "hook_event_name": "PermissionRequest",
+  "turn_id": "t1",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git push -f origin main",
+    "description": null
+  }
+}

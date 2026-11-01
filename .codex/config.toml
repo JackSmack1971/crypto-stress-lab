@@ -1,0 +1,17 @@
+# CODEX PRIME project baseline (BLUEPRINT.md §1.2). Loads only after the operator trusts the project.
+# Sandbox model: legacy sandbox_mode. Do not add default_permissions or [permissions.*] here; with
+# In an unmanaged legacy selection, sandbox_mode selects the legacy system instead of default_permissions.
+# Managed allowed_permission_profiles can force profile selection; verify resolved policy on the target CLI.
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = false
+
+[shell_environment_policy]
+# Default is true, which passes *KEY*/*SECRET*/*TOKEN* variables to commands. false applies the automatic exclusions.
+ignore_default_excludes = false
+
+[agents]
+max_concurrent_threads_per_session = 4

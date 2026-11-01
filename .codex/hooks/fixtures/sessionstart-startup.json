@@ -1,0 +1,9 @@
+{
+  "session_id": "s1",
+  "transcript_path": null,
+  "cwd": ".",
+  "model": "x",
+  "permission_mode": "default",
+  "hook_event_name": "SessionStart",
+  "source": "startup"
+}

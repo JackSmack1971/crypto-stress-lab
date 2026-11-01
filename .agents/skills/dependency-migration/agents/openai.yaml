@@ -1,0 +1,5 @@
+display_name: "Dependency Migration"
+short_description: "Version-scoped upgrade planning, execution, and verification"
+default_prompt: "Use $dependency-migration to assess the requested dependency upgrade in this repository, establish its compatibility and rollback plan, and only implement changes if requested and safe."
+policy:
+  allow_implicit_invocation: false

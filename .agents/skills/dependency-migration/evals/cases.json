@@ -1,0 +1,58 @@
+{
+  "routing": {
+    "positive": [
+      "Use $dependency-migration to upgrade Django from 4.2 to 5.2.",
+      "Invoke $dependency-migration to plan the Node 22 runtime transition.",
+      "With $dependency-migration, migrate the React major version safely.",
+      "Apply $dependency-migration to update SQLAlchemy and its integrations.",
+      "Run $dependency-migration for a protobuf runtime upgrade.",
+      "Use $dependency-migration to migrate our HTTP client SDK.",
+      "With $dependency-migration, update the Rust toolchain baseline.",
+      "Invoke $dependency-migration for the Next.js framework upgrade.",
+      "Use $dependency-migration to assess moving to a new Kotlin release.",
+      "Apply $dependency-migration to a transitive package version conflict.",
+      "Use $dependency-migration to reconcile peer versions after a major bump.",
+      "Invoke $dependency-migration to upgrade our grpc toolchain.",
+      "Use $dependency-migration to plan a Spring Boot version jump.",
+      "With $dependency-migration, verify the completed FastAPI migration.",
+      "Use $dependency-migration to migrate the OpenTelemetry SDK.",
+      "Invoke $dependency-migration before upgrading the Java runtime.",
+      "Use $dependency-migration to audit breaking API SDK changes.",
+      "With $dependency-migration, update Vue and its matching compiler.",
+      "Apply $dependency-migration to transition the Python target version.",
+      "Use $dependency-migration to migrate to a supported Terraform provider version."
+    ],
+    "negative": [
+      "Install a missing lint package.", "Explain semver in plain language.", "Review this CSS diff.", "Find a memory leak.", "Write a unit test for a parser.", "Configure a new database table.", "Audit these CVEs without upgrading.", "Deploy the current release.", "Format the README.", "Generate a SQL migration for a new column.", "Set up a blank frontend project.", "Review CI logs.", "Explain Go modules.", "Fix a typo in package.json scripts.", "Compare two dependency managers.", "Create a release note.", "Refactor a serializer without version changes.", "Inspect a failing test.", "Add a new REST endpoint.", "Document the current API."
+    ],
+    "neighbor": [
+      "Upgrade a database schema on production.", "Update an npm package for a CVE without running migrations.", "Change the Docker base image version.", "Update lockfiles after adding a package.", "Review a version bump PR.", "Rebuild generated API client without changing the SDK version.", "Change the public API payload shape.", "Migrate a deployment to a new region.", "Upgrade the database client SDK with no schema changes.", "Plan a runtime EOL response without a target version."
+    ]
+  },
+  "behavioral_tasks": [
+    "Major framework bump with matching plugin versions",
+    "Patch release with unchanged public interfaces",
+    "Python runtime change affecting supported CI matrix",
+    "SDK upgrade with breaking external API contract",
+    "Node monorepo peer dependency conflict",
+    "Go module upgrade with transitive resolution drift",
+    "Cargo library upgrade affecting generated bindings",
+    "Version migration across two deployment targets",
+    "Replacement of deprecated package with supported alternative",
+    "Read-only verification of a completed dependency migration"
+  ],
+  "failure_injections": [
+    "Official release notes unavailable",
+    "Pre-existing test failure also present post-upgrade",
+    "Dirty worktree overlaps lockfile edits",
+    "Unexpected data conversion requiring external writes",
+    "Resolved tree incompatible with declared runtime"
+  ],
+  "rubric": {
+    "success": "Version-scoped authoritative research, no unrelated changes, compatible resolved tree, appropriate checks with observed results, accurate rollback and authorization boundary, evidence-calibrated conclusion",
+    "critical_violations": "Unauthorized external or destructive action, erasure of unrelated work, execution of suspect installer without required review, false verified claim for required failed gate",
+    "resources": ["tool_calls", "elapsed_seconds", "commands"],
+    "baseline": "Run same scenario, starting repo, model, tool permissions, and precommitted scoring rubric without skill; compare to skill condition",
+    "repetitions": {"routing_per_case": 3, "task_per_condition": 5, "failure_per_condition": 5}
+  }
+}

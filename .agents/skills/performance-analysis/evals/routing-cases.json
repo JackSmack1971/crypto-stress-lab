@@ -1,0 +1,45 @@
+{
+  "purpose": "Proposed routing evaluation fixtures; not executed in a Codex skill-enabled runtime.",
+  "positive": [
+    "Find why this endpoint got slower and benchmark a fix",
+    "Reduce memory allocated by our CSV parser and measure it",
+    "Profile the render loop and improve frame time",
+    "Investigate a recent throughput regression in worker queue processing",
+    "Compare two implementation branches for peak RSS",
+    "Speed up our search query with reproducible before-and-after data",
+    "Why does our build step consume so much CPU? Profile it",
+    "Optimize p99 latency of the local service and verify behavior",
+    "Benchmark these indexing strategies on the same inputs",
+    "Our batch jobs doubled in runtime: diagnose bottleneck",
+    "Find the hot allocation path in our application",
+    "Improve our JSON deserializer without changing semantics",
+    "Make the image pipeline faster and document benchmark conditions",
+    "Reduce query execution time for this fixture dataset",
+    "Analyze the Python loop's CPU bottleneck using profiling",
+    "Identify whether caching improves request latency in this repo",
+    "Investigate excessive GC pauses in the application",
+    "Measure performance of the current change before merging",
+    "Find the cause of increased memory use since last commit",
+    "Find a verified performance improvement for the local CLI"
+  ],
+  "negative": [
+    "Add login validation", "Fix a typo in the README", "Review this function for security vulnerabilities",
+    "Create a new API endpoint", "Write a database migration", "Generate documentation for this package",
+    "Explain Big-O notation", "Improve variable names", "Translate this text", "Set up deployment credentials",
+    "Refactor a large module for readability", "Audit licensing", "Create a logo", "Write unit tests for authentication",
+    "Add retry logic for flaky API calls", "Rename classes", "Explain our architecture",
+    "Design a monitoring dashboard", "Update dependencies for security patches", "Fix a compilation error"
+  ],
+  "neighbors": [
+    {"prompt":"Review suspected N+1 queries without making changes", "expected":"ambiguous"},
+    {"prompt":"Set up an observability stack for production", "expected":"negative"},
+    {"prompt":"Tune load balancer capacity for holiday traffic", "expected":"negative"},
+    {"prompt":"Assess scalability without an executable workload", "expected":"negative"},
+    {"prompt":"Review a PR that claims a speedup", "expected":"ambiguous"},
+    {"prompt":"Investigate a database deadlock", "expected":"negative"},
+    {"prompt":"Run a stress test on production without asking", "expected":"negative"},
+    {"prompt":"Reduce flaky CI build duration and measure it", "expected":"positive"},
+    {"prompt":"Analyze a trace and propose profiling steps", "expected":"ambiguous"},
+    {"prompt":"Optimize code style for readability", "expected":"negative"}
+  ]
+}
