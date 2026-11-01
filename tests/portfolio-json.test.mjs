@@ -123,6 +123,10 @@ test('malformed asset entries and field values return validation errors without 
     const input=envelope();input.portfolio.preset='unsupported-probe';input.portfolio.assets[0][field]=value;
     let result;assert.doesNotThrow(()=>{result=parsePortfolioImport(encode(input));});assert.equal(result.ok,false);
   }
+  for(const field of ['group','weight','volatility','shock']){
+    const input=envelope();input.portfolio.assets[0][field]={toString:5};
+    let result;assert.doesNotThrow(()=>{result=parsePortfolioImport(encode(input));});assert.equal(result.ok,false);
+  }
   for(const assets of [[null],[validAsset,null]]){
     const input=envelope();input.portfolio.assets=assets;
     let result;assert.doesNotThrow(()=>{result=parsePortfolioImport(encode(input));});assert.equal(result.ok,false);

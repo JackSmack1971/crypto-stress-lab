@@ -91,7 +91,14 @@ export function parsePortfolioImport(text) {
       portfolio.assets.forEach((asset,index)=>{if(isRecord(asset)&&typeof asset.id==='string'){if(ids.has(asset.id))errors.push({path:`portfolio.assets[${index}].id`,message:'Use a unique asset ID.'});ids.add(asset.id);}});
     }
     if (PORTFOLIO_KEYS.every(key=>Object.hasOwn(portfolio,key)) && Array.isArray(portfolio.assets)) {
-      for (const message of validate({version:1,...portfolio})) {
+      const validationPortfolio={...portfolio,assets:portfolio.assets.map(asset=>{
+        if(!isRecord(asset))return asset;
+        const safe={...asset};
+        if(typeof safe.group!=='string')safe.group='bitcoin';
+        for(const key of ['weight','volatility','shock'])if(typeof safe[key]!=='number'||!Number.isFinite(safe[key]))safe[key]=0;
+        return safe;
+      })};
+      for (const message of validate({version:1,...validationPortfolio})) {
         const [path,friendly]=mapValidationMessage(message);
         if (!errors.some(error=>error.path===path && error.message===friendly)) errors.push({path,message:friendly});
       }
