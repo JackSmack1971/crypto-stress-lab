@@ -1,5 +1,5 @@
 import { PRESETS, GROUPS, sampleState, validate, calculate, normalizeWeights, reverseStress, sensitivityGrid } from './engine.mjs';
-import { restoreState, serializeCsv, toCsvRows } from './persistence.mjs';
+import { restoreState, serializeCsv, toCsvRows, serializePortfolio, parsePortfolioImport, MAX_IMPORT_BYTES, SCHEMA_ID, SCHEMA_VERSION } from './persistence.mjs';
 const $ = id => document.getElementById(id);
 const STORAGE_KEY = 'crypto-stress-lab:v1';
 const colors = ['#edb963','#a4a0fb','#7de2c3','#70b5eb','#f58f9e','#c3d879','#e4a8ef','#81c8ce','#d3a584','#8aafff','#bfccdd','#d989c2'];
@@ -161,7 +161,9 @@ function updateReverse() {
 function update() {
   updateLabels();
   const errors=validate(state);
-  $('errors').hidden=!errors.length;$('results').hidden=!!errors.length;$('export').disabled=!!errors.length;$('run').disabled=!!errors.length;
+  let jsonExportValid=!errors.length;
+  if(jsonExportValid)try{serializePortfolio(state);}catch{jsonExportValid=false;}
+  $('errors').hidden=!errors.length;$('results').hidden=!!errors.length;$('export').disabled=!!errors.length;$('export-json').disabled=!jsonExportValid;$('run').disabled=!!errors.length;
   if(errors.length){
     result=null;$('errors').innerHTML=`<strong>Check your inputs to run the analysis.</strong><ul>${errors.map(e=>`<li>${esc(e)}</li>`).join('')}</ul>`;
     ['metric-drawdown','metric-loss','metric-uplift','metric-effective'].forEach(id=>$(id).textContent='—');
@@ -208,6 +210,83 @@ $('export').addEventListener('click',()=>{
   const rows=toCsvRows(state,result,PRESETS[state.preset]?.name || 'Custom');
   const blob=new Blob(['\ufeff'+serializeCsv(rows)],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`crypto-stress-results-${new Date().toISOString().slice(0,10)}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Results and assumptions exported as CSV.');
 });
+$('export-json').addEventListener('click',()=>{
+  if(!result || validate(state).length)return;
+  try {
+    const blob=new Blob([serializePortfolio(state)],{type:'application/json;charset=utf-8'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='crypto-stress-lab-portfolio.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Portfolio configuration exported as JSON.');
+  } catch(error) { showImportErrors([{path:'$',message:error.message}]); }
+});
+function showImportErrors(errors) {
+  const region=$('portfolio-json-errors');region.replaceChildren();
+  if(!errors.length){region.hidden=true;return;}
+  region.hidden=false;
+  const list=document.createElement('ul');
+  for(const error of errors.slice(0,10)) { const item=document.createElement('li');item.textContent=`${error.path}: ${error.message}`;list.append(item); }
+  if(errors.length>10){const item=document.createElement('li');item.textContent=`and ${errors.length-10} more`;list.append(item);}
+  region.append(list);
+}
+let pendingImport=null;
+function addPreviewRow(body,label,value) {
+  const row=document.createElement('tr'),heading=document.createElement('th'),cell=document.createElement('td');heading.scope='row';heading.textContent=label;cell.textContent=String(value);row.append(heading,cell);body.append(row);
+}
+function previewPortfolio(portfolio) {
+  pendingImport=structuredClone(portfolio);
+  const dialog=$('import-dialog'),summary=$('import-summary'),body=$('import-assets');summary.replaceChildren();body.replaceChildren();
+  const scenario=PRESETS[portfolio.preset]?.name || 'Custom scenario';
+  const fields=[['Schema',`${SCHEMA_ID} · version ${SCHEMA_VERSION}`],['Portfolio value',money(portfolio.value)],['Risk horizon',`${num(portfolio.days,0)} days`],['Baseline correlation',num(portfolio.baseCorrelation)],['Stressed correlation',num(portfolio.stressCorrelation)],['Shock intensity',`${num(portfolio.multiplier)}×`],['Scenario',scenario],['Assets',String(portfolio.assets.length)],['Weight total',`${num(portfolio.assets.reduce((sum,asset)=>sum+asset.weight,0))}%`]];
+  for(const [label,value] of fields)addPreviewRow(summary,label,value);
+  for(const asset of portfolio.assets){const row=document.createElement('tr');for(const value of [asset.symbol,asset.group,`${num(asset.weight)}%`,`${num(asset.volatility)}%`,`${num(asset.shock)}%`]){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}body.append(row);}
+  $('import-replacement').textContent=`This replaces the current portfolio (${state.assets.length} → ${portfolio.assets.length} assets).`;
+  showImportErrors([]);dialog.showModal();$('import-cancel').focus();
+}
+$('import-json').addEventListener('click',()=>{showImportErrors([]);$('portfolio-json-file').click();});
+$('portfolio-json-file').addEventListener('change',async event=>{
+  const input=event.currentTarget,file=input.files?.[0];input.value='';if(!file)return;
+  if(file.size>MAX_IMPORT_BYTES){showImportErrors([{path:'$',message:`File exceeds the ${MAX_IMPORT_BYTES}-byte import limit.`}]);return;}
+  let bytes;
+  try {
+    bytes=await file.arrayBuffer();
+  } catch {
+    showImportErrors([{path:'$',message:'Could not read this JSON file.'}]);return;
+  }
+  let decoder;
+  try {
+    decoder=new TextDecoder('utf-8',{fatal:true});
+  } catch {
+    showImportErrors([{path:'$',message:'Could not read this JSON file.'}]);return;
+  }
+  let decoded;
+  try {
+    decoded=decoder.decode(bytes);
+  } catch(error) {
+    const message=error instanceof TypeError?'File is not valid UTF-8.':'Could not read this JSON file.';
+    showImportErrors([{path:'$',message}]);return;
+  }
+  try {
+    const parsed=parsePortfolioImport(decoded);
+    if(!parsed.ok){showImportErrors(parsed.errors);return;}
+    previewPortfolio(parsed.portfolio);
+  } catch {
+    showImportErrors([{path:'$',message:'Could not read this JSON file.'}]);
+  }
+});
+$('import-cancel').addEventListener('click',()=>{$('import-dialog').close();});
+$('import-dialog').addEventListener('keydown',event=>{
+  if(event.key!=='Tab')return;
+  const dialog=$('import-dialog'),focusable=[...dialog.querySelectorAll('button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(element=>!element.hidden);
+  if(!focusable.length)return;
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey && document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
+});
+$('import-confirm').addEventListener('click',()=>{
+  if(!pendingImport)return;
+  const copy=structuredClone(pendingImport),errors=validate({version:1,...copy});
+  if(errors.length){$('import-dialog').close();pendingImport=null;showImportErrors(errors.map(message=>({path:'portfolio',message})));return;}
+  state={version:1,...copy};pendingImport=null;$('import-dialog').close();syncControls();update();toast('Portfolio JSON imported.');
+});
+$('import-dialog').addEventListener('close',()=>{pendingImport=null;$('import-json').focus();});
 syncControls();update();if(loadMessage)toast(loadMessage);
 $('reverse-mode').addEventListener('change',updateReverse);
 $('reverse-unit').addEventListener('change',updateReverse);

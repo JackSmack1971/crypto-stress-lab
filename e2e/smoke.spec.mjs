@@ -242,3 +242,74 @@ test('reverse controls work from the keyboard and asset symbols render as option
   await expect(page.locator('#reverse-selection img')).toHaveCount(0);
   expect(pageErrors).toEqual([]);
 });
+
+function jsonPortfolio(state=savedDemoState()) {
+  const {version,...portfolio}=state;
+  return JSON.stringify({schema:'crypto-stress-lab/portfolio',schemaVersion:1,portfolio},null,2)+'\n';
+}
+
+test('exports deterministic portfolio JSON and disables export for invalid edits', async ({page})=>{
+  await openApp(page);
+  await page.locator('#export').focus();await page.keyboard.press('Tab');await expect(page.locator('#export-json')).toBeFocused();
+  const [download]=await Promise.all([page.waitForEvent('download'),page.keyboard.press('Enter')]);
+  expect(download.suggestedFilename()).toBe('crypto-stress-lab-portfolio.json');
+  const stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk);
+  const content=Buffer.concat(chunks).toString('utf8'),parsed=JSON.parse(content);
+  expect(content.endsWith('\n')).toBe(true);expect(parsed.schema).toBe('crypto-stress-lab/portfolio');expect(parsed.schemaVersion).toBe(1);
+  expect(Object.keys(parsed)).toEqual(['schema','schemaVersion','portfolio']);expect(Object.keys(parsed.portfolio)).toEqual(['value','days','baseCorrelation','stressCorrelation','multiplier','preset','assets']);
+  expect(Object.keys(parsed.portfolio.assets[0])).toEqual(['id','symbol','group','weight','volatility','shock']);expect(parsed.portfolio).not.toHaveProperty('version');
+  await page.locator('#portfolio-value').fill('');await expect(page.locator('#export-json')).toBeDisabled();
+});
+
+test('JSON export failures render a structured local error',async({page})=>{
+  const state=savedDemoState();state.preset='unsupported';
+  await page.addInitScript(saved=>localStorage.setItem('crypto-stress-lab:v1',JSON.stringify(saved)),state);await openApp(page);
+  await expect(page.locator('#export-json')).toBeDisabled();
+  await page.locator('#export-json').evaluate(button=>button.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+  await expect(page.locator('#portfolio-json-errors')).toContainText('portfolio.preset');
+  await expect(page.locator('#portfolio-json-errors')).not.toContainText('undefined');
+});
+
+test('valid JSON import previews safely, cancel and Escape do not write, confirmation applies',async({page})=>{
+  await openApp(page);const original=await page.evaluate(()=>localStorage.getItem('crypto-stress-lab:v1'));
+  const importButton=page.locator('#import-json'),fileInput=page.locator('#portfolio-json-file');
+  await page.locator('#export-json').focus();await page.keyboard.press('Tab');await expect(importButton).toBeFocused();
+  const fileChooser=page.waitForEvent('filechooser');await page.keyboard.press('Enter');await (await fileChooser).setFiles({name:'portfolio.json',mimeType:'application/json',buffer:Buffer.from(jsonPortfolio({...savedDemoState(),value:250000}))});
+  const dialog=page.locator('#import-dialog');await expect(dialog).toBeVisible();await expect(page.locator('#import-title')).toBeVisible();await expect(page.locator('#import-summary')).toContainText('$250,000.00');await expect(page.locator('#import-replacement')).toContainText('4 → 4');await expect(page.locator('#import-assets tr')).toHaveCount(4);
+  await expect(page.locator('#import-cancel')).toBeFocused();await page.keyboard.press('Tab');await expect(page.locator('#import-confirm')).toBeFocused();await page.keyboard.press('Tab');await expect(page.locator('.import-asset-scroll')).toBeFocused();await page.keyboard.press('Tab');await expect(page.locator('#import-cancel')).toBeFocused();await page.keyboard.press('Escape');await expect(dialog).toBeHidden();await expect(importButton).toBeFocused();expect(await page.evaluate(()=>localStorage.getItem('crypto-stress-lab:v1'))).toBe(original);
+  await fileInput.setInputFiles({name:'portfolio.json',mimeType:'application/json',buffer:Buffer.from(jsonPortfolio({...savedDemoState(),value:250000}))});await expect(dialog).toBeVisible();
+  await page.locator('#import-cancel').click();await expect(dialog).toBeHidden();expect(await page.evaluate(()=>localStorage.getItem('crypto-stress-lab:v1'))).toBe(original);
+  await fileInput.setInputFiles({name:'portfolio.json',mimeType:'application/json',buffer:Buffer.from(jsonPortfolio({...savedDemoState(),value:250000}))});await page.locator('#import-confirm').click();
+  await expect(page.locator('#portfolio-value')).toHaveValue('250000');await expect(page.locator('#toast')).toHaveText('Portfolio JSON imported.');
+  const saved=JSON.parse(await page.evaluate(()=>localStorage.getItem('crypto-stress-lab:v1')));expect(saved.version).toBe(1);expect(saved.value).toBe(250000);
+});
+
+test('invalid JSON files report local errors and preserve UI and storage',async({page})=>{
+  await openApp(page);const fileInput=page.locator('#portfolio-json-file');
+  const cases=[
+    {name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{')},
+    {name:'version.json',mimeType:'application/json',buffer:Buffer.from(jsonPortfolio().replace('"schemaVersion": 1','"schemaVersion": 2'))},
+    {name:'extra.json',mimeType:'application/json',buffer:Buffer.from(jsonPortfolio().replace('"value": 100000','"unknown": 1,\n    "value": 100000'))},
+    {name:'large.json',mimeType:'application/json',buffer:Buffer.alloc(70*1024,0x20)},
+    {name:'invalid-utf8.json',mimeType:'application/json',buffer:Buffer.from([0xc3,0x28])}
+  ];
+  for(const file of cases){
+    const beforeStorage=await page.evaluate(()=>localStorage.getItem('crypto-stress-lab:v1'));
+    const beforeValues=await page.locator('#portfolio input, #portfolio select').evaluateAll(elements=>elements.map(element=>element.value));await fileInput.setInputFiles(file);
+    await expect(page.locator('#portfolio-json-errors')).toBeVisible();await expect(page.locator('#import-dialog')).toBeHidden();
+    expect(await page.locator('#portfolio input, #portfolio select').evaluateAll(elements=>elements.map(element=>element.value))).toEqual(beforeValues);expect(await page.evaluate(()=>localStorage.getItem('crypto-stress-lab:v1'))).toBe(beforeStorage);
+  }
+  await expect(page.locator('#errors')).toBeHidden();await expect(page.locator('#results')).toBeVisible();
+});
+
+test('untrusted symbols stay literal in preview and dialog is contained and keyboard-operable at 375px',async({page})=>{
+  const errors=[],external=[],origin=new URL('http://127.0.0.1:4173').origin;page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(new URL(request.url()).origin!==origin)external.push(request.url());});
+  await page.setViewportSize({width:375,height:812});await openApp(page);
+  const hostile={...savedDemoState(),preset:'custom'};hostile.assets[0]={...hostile.assets[0],symbol:'<img src=x>'};
+  await page.locator('#import-json').focus();const chooserPromise=page.waitForEvent('filechooser');await page.keyboard.press('Enter');
+  const chooser=await chooserPromise;await chooser.setFiles({name:'hostile.json',mimeType:'application/json',buffer:Buffer.from(jsonPortfolio(hostile))});
+  await expect(page.locator('#import-dialog')).toBeVisible();await expect(page.locator('#import-assets')).toContainText('<img src=x>');await expect(page.locator('#import-assets img')).toHaveCount(0);
+  await expect(page.locator('#import-cancel')).toBeFocused();await page.keyboard.press('Tab');await expect(page.locator('#import-confirm')).toBeFocused();
+  const dimensions=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+  await page.keyboard.press('Escape');expect(errors).toEqual([]);expect(external).toEqual([]);
+});
