@@ -39,10 +39,10 @@
   <div class="model-strip"><span><svg class="icon"><use href="#i-flask"/></svg>Hypothetical inputs <b>·</b> No market feed</span><span id="analysis-status" role="status">Ready</span></div>
   <div id="errors" class="error-banner" role="alert" hidden></div>
   <section class="metrics" aria-label="Portfolio summary">
-   <article class="metric"><div class="metric-label">Scenario drawdown <span class="tag">SHOCK</span></div><strong id="metric-drawdown" class="negative">—</strong><div id="metric-end" class="metric-detail">One-step portfolio loss</div></article>
-   <article class="metric"><div class="metric-label">Scenario P&L <span class="tag">USD</span></div><strong id="metric-loss">—</strong><div id="metric-loss-detail" class="metric-detail">Against starting portfolio value</div></article>
-   <article class="metric"><div class="metric-label">Correlation risk change <span class="tag">MODEL</span></div><strong id="metric-uplift">—</strong><div id="metric-uplift-detail" class="metric-detail">Horizon volatility</div></article>
-   <article class="metric"><div class="metric-label">Effective positions <span class="tag">1 / HHI</span></div><strong id="metric-effective">—</strong><div id="metric-concentration" class="metric-detail">Weight-based concentration</div></article>
+   <article class="metric"><div class="metric-label">Scenario drawdown <span class="tag">SHOCK</span></div><strong id="metric-drawdown" class="negative">—</strong><div id="metric-end" class="metric-detail">One-step portfolio loss</div><p class="metric-def">Loss from the selected shocks applied once. Not a forecast or peak-to-trough drawdown.</p></article>
+   <article class="metric"><div class="metric-label">Scenario P&L <span class="tag">USD</span></div><strong id="metric-loss">—</strong><div id="metric-loss-detail" class="metric-detail">Against starting portfolio value</div><p class="metric-def">Starting value × scenario return, in USD.</p></article>
+   <article class="metric"><div class="metric-label">Correlation risk change <span class="tag">MODEL</span></div><strong id="metric-uplift">—</strong><div id="metric-uplift-detail" class="metric-detail">Horizon volatility</div><p class="metric-def">Modeled volatility change between baseline and stressed correlation. Not a price move.</p></article>
+   <article class="metric"><div class="metric-label">Effective positions <span class="tag">1 / HHI</span></div><strong id="metric-effective">—</strong><div id="metric-concentration" class="metric-detail">Weight-based concentration</div><p class="metric-def">How many equal-sized holdings give the same concentration (1 / HHI).</p></article>
   </section>
   <div class="dashboard">
    <div class="input-column">

@@ -45,6 +45,39 @@ test('loads the demo scenario without console errors or external requests', asyn
   expect(externalRequests).toEqual([]);
 });
 
+test('keeps summary metric definitions visible alongside dynamic details after scenario changes', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await openApp(page);
+
+  const definitions = [
+    ['Loss from the selected shocks applied once. Not a forecast or peak-to-trough drawdown.', '#metric-end'],
+    ['Starting value × scenario return, in USD.', '#metric-loss-detail'],
+    ['Modeled volatility change between baseline and stressed correlation. Not a price move.', '#metric-uplift-detail'],
+    ['How many equal-sized holdings give the same concentration (1 / HHI).', '#metric-concentration']
+  ];
+
+  await expect(page.locator('#metric-drawdown')).toHaveText('29.45%');
+  for (const [definition, detailId] of definitions) {
+    const detail = page.locator(detailId);
+    await expect(detail.locator('..').locator('.metric-def')).toHaveText(definition);
+    await expect(detail).not.toBeEmpty();
+  }
+  const initialSizes = await page.locator('.metric-def').evaluateAll(nodes => nodes.map(node => Number.parseFloat(getComputedStyle(node).fontSize)));
+  expect(initialSizes.every(size => size >= 11)).toBe(true);
+  let dimensions = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
+  expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+
+  await page.locator('#scenario').selectOption('depeg');
+  await expect(page.locator('#metric-drawdown')).not.toHaveText('29.45%');
+  for (const [definition, detailId] of definitions) {
+    const detail = page.locator(detailId);
+    await expect(detail.locator('..').locator('.metric-def')).toHaveText(definition);
+    await expect(detail).not.toBeEmpty();
+  }
+  dimensions = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
+  expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+});
+
 test('restores the saved portfolio value after reload', async ({ page }) => {
   await openApp(page);
   await page.locator('#portfolio-value').fill('250000');
