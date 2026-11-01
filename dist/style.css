@@ -9,5 +9,7 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
 /* Keep the sign and currency amount together in narrow summary cards. */
 #metric-loss{white-space:nowrap}
+ .reverse-panel{padding:21px 22px}.reverse-panel .panel-heading{margin-bottom:15px}.reverse-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.reverse-controls label{display:grid;gap:6px;color:var(--text-secondary);font-size:10px}.reverse-controls label[hidden]{display:none}.reverse-result{margin-top:15px;padding:12px;background:#111b25;border:1px solid var(--border);border-radius:6px;color:#dce4ed;font-size:11px;line-height:1.7}.reverse-result.reverse-error{color:#ffc0c8;border-color:#8e4854;background:#291b25}
+@media(max-width:640px){.reverse-panel{padding:20px 17px}.reverse-controls{grid-template-columns:1fr}.reverse-controls input,.reverse-controls select{height:44px}}
 @media(max-width:640px){#metric-loss{font-size:clamp(16px,4.9vw,23px)}#metric-effective{font-size:clamp(20px,6vw,26px)}}
 @media(max-width:360px){.mini-metrics{gap:12px}.mini-metrics strong{font-size:22px}.downside-row{gap:5px}.downside-row>span{min-width:0}.downside-row strong{white-space:nowrap;flex-shrink:0}}

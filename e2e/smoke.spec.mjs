@@ -159,3 +159,41 @@ test('fits the page within a 375px viewport', async ({ page }) => {
   }));
   expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
 });
+
+test('reverse stress updates locally and keeps its validation out of the global banner', async ({ page }) => {
+  await openApp(page);
+  await expect(page.locator('#reverse-result')).toContainText('−20.00%');
+  const saved = await page.evaluate(() => localStorage.getItem('crypto-stress-lab:v1'));
+  await page.locator('#reverse-mode').selectOption('asset');
+  await page.locator('#reverse-selection').selectOption('BTC');
+  await page.locator('#reverse-target').fill('50');
+  await expect(page.locator('#reverse-result')).toContainText('Unreachable');
+  await expect(page.locator('#reverse-result')).toContainText('$45,000.00');
+  await expect(page.locator('#errors')).toBeHidden();
+  await expect(page.locator('#results')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('crypto-stress-lab:v1'))).toBe(saved);
+  await page.setViewportSize({ width: 375, height: 812 });
+  const dimensions = await page.evaluate(() => ({viewport:innerWidth,document:document.documentElement.scrollWidth}));
+  expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+});
+
+test('reverse controls work from the keyboard and asset symbols render as option text', async ({ page }) => {
+  const pageErrors=[];
+  page.on('pageerror',error=>pageErrors.push(error.message));
+  await openApp(page);
+  await page.locator('#reverse-unit').focus();
+  await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+  await expect(page.locator('#reverse-unit')).toHaveValue('usd');
+  await page.locator('#reverse-mode').focus();
+  await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+  await expect(page.locator('#reverse-mode')).toHaveValue('asset');
+  await page.locator('#reverse-selection').focus();
+  await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+  await expect(page.locator('#reverse-selection')).toHaveValue('ETH');
+  const target=page.locator('#reverse-target');await target.focus();await page.keyboard.press('Control+A');await page.keyboard.type('1000');
+  await expect(page.locator('#reverse-result')).toContainText('required uniform shock');
+  await page.locator('[data-id="eth"] [data-field="symbol"]').fill('<img src=x>');
+  await expect(page.locator('#reverse-selection')).toContainText('<img src=x>');
+  await expect(page.locator('#reverse-selection img')).toHaveCount(0);
+  expect(pageErrors).toEqual([]);
+});
