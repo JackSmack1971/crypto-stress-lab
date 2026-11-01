@@ -82,6 +82,13 @@ function renderResults(r) {
   $('base-sigma').textContent=pct(r.baselineSigma*r.horizonScale);$('stress-sigma').textContent=pct(r.stressedSigma*r.horizonScale);
   $('horizon-label').textContent=`${num(state.days,0)}D`;
   $('downside').textContent=`${pct(r.stressedDownside)} ↓`;
+  $('downside-99').textContent=`${pct(r.stressedDownside99)} ↓`;
+  $('expected-shortfall-95').textContent=pct(r.stressedExpectedShortfall95);
+  $('expected-shortfall-99').textContent=pct(r.stressedExpectedShortfall99);
+  $('downside-usd').textContent=money(r.stressedDownside*state.value);
+  $('downside-99-usd').textContent=money(r.stressedDownside99*state.value);
+  $('expected-shortfall-95-usd').textContent=money(r.stressedExpectedShortfall95*state.value);
+  $('expected-shortfall-99-usd').textContent=money(r.stressedExpectedShortfall99*state.value);
   $('actual-vol').textContent=pct(r.stressedSigma*r.horizonScale);$('equal-vol').textContent=pct(r.equalSigma*r.horizonScale);
   $('actual-return').textContent=signedPct(r.portfolioReturn);$('equal-return').textContent=signedPct(r.equalReturn);
   $('concentration-note').textContent=`Equal weights: ${pct(1/state.assets.length,1)} per listed asset. ${r.stressedSigma>r.equalSigma?'Your allocation has higher':'Your allocation has equal or lower'} modeled volatility than equal weights.`;

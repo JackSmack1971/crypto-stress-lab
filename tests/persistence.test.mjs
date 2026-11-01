@@ -53,6 +53,38 @@ test('CSV rows include the asset header and blank risk shares at zero variance',
   assert.deepEqual(rows.slice(headerIndex + 1, headerIndex + 1 + state.assets.length).map(row => row[7]), ['', '', '', '']);
 });
 
+test('CSV appends Gaussian tail metrics after an exact legacy row prefix', () => {
+  const state = sampleState();
+  const result = calculate(state);
+  const rows = toCsvRows(state, result);
+  const limitationsIndex = rows.findIndex(row => row[0] === 'Limitations');
+  const prefix = rows.slice(0, limitationsIndex + 1);
+  const legacyPrefix = [
+    ['Crypto Stress Lab — hypothetical scenario results'], rows[1], ['Portfolio value USD',state.value], ['Scenario',state.preset],
+    ['Shock multiplier',state.multiplier], ['Risk horizon days',state.days], ['Baseline correlation',state.baseCorrelation], ['Stressed correlation',state.stressCorrelation], [],
+    ['Asset','Group','Weight %','Annual volatility %','Base shock %','Effective shock %','Scenario P&L USD','Stressed variance risk share %'],
+    ...result.assets.map(a=>[a.symbol,a.group,a.weight,a.volatility,a.shock,a.effectiveShock*100,a.pnl,result.stressedSigma===0?'':a.riskShare*100]),
+    [], ['Metric','Value'], ['Scenario return %',result.portfolioReturn*100], ['Scenario drawdown %',result.drawdown*100], ['Scenario P&L USD',result.pnl],
+    ['Ending value USD',result.endValue], ['Baseline horizon volatility %',result.baselineSigma*result.horizonScale*100],
+    ['Stressed horizon volatility %',result.stressedSigma*result.horizonScale*100], ['95% normal model downside %',result.stressedDownside*100],
+    ['HHI',result.hhi], ['Effective positions',result.effectiveAssets], ['Equal-weight scenario return %',result.equalReturn*100],
+    ['Equal-weight horizon volatility %',result.equalSigma*result.horizonScale*100], [], ['Preset comparison','Return %'],
+    ...result.comparisons.map(a=>[a.name,a.return*100]), [], ['Limitations','Hypothetical long-only spot model. No fees, liquidity, leverage, liquidation, taxes or path effects. Scenario drawdown is a one-step loss, not maximum path drawdown. Common equicorrelation normal risk model; no forecasts.']
+  ];
+  assert.match(rows[1][1], /^\d{4}-\d\d-\d\dT.*Z$/);
+  assert.deepEqual(prefix, legacyPrefix);
+  assert.deepEqual(rows.slice(prefix.length), [
+    [], ['Gaussian tail risk (stressed)'], ['Metric','Value'],
+    ['99% normal model downside %',result.stressedDownside99*100],
+    ['95% normal model expected shortfall %',result.stressedExpectedShortfall95*100],
+    ['99% normal model expected shortfall %',result.stressedExpectedShortfall99*100],
+    ['95% normal model downside USD',result.stressedDownside*state.value],
+    ['99% normal model downside USD',result.stressedDownside99*state.value],
+    ['95% normal model expected shortfall USD',result.stressedExpectedShortfall95*state.value],
+    ['99% normal model expected shortfall USD',result.stressedExpectedShortfall99*state.value]
+  ]);
+});
+
 test('duplicate asset ids fall back to demo and report invalid data', () => {
   const demo = sampleState();
   const duplicateAssets = demo.assets.map(asset => ({ ...asset }));

@@ -135,6 +135,7 @@ test('exports a BOM-prefixed CSV with headers, scenario, and neutralized formula
   expect(csv.startsWith('\uFEFF')).toBe(true);
   expect(csv).toContain('"Asset","Group","Weight %","Annual volatility %","Base shock %","Effective shock %","Scenario P&L USD","Stressed variance risk share %"');
   expect(csv).toContain('"Scenario","Broad selloff"');
+  expect(csv).toContain('"99% normal model downside %"');
   expect(csv).toContain('"\'=SUM(1)","bitcoin"');
 });
 
@@ -158,6 +159,10 @@ test('fits the page within a 375px viewport', async ({ page }) => {
     documentWidth: document.documentElement.scrollWidth
   }));
   expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
+  for (const id of ['#downside-usd', '#downside-99-usd', '#expected-shortfall-95-usd', '#expected-shortfall-99-usd']) {
+    await expect(page.locator(id)).toBeVisible();
+    await expect(page.locator(id)).toContainText('$');
+  }
 });
 
 test('reverse stress updates locally and keeps its validation out of the global banner', async ({ page }) => {

@@ -41,7 +41,58 @@ test('positive and zero shocks produce zero drawdown and correct P&L',()=>{
 test('all zero volatilities have zero variance and zero risk shares',()=>{
   const s=twoAssets();s.assets.forEach(a=>a.volatility=0);const r=calculate(s);
   close(r.stressedSigma,0);close(r.baselineSigma,0);close(r.stressedDownside,0);
+  close(r.stressedDownside99,0);close(r.stressedExpectedShortfall95,0);close(r.stressedExpectedShortfall99,0);
   r.assets.forEach(a=>close(a.riskShare,0));r.curve.forEach(p=>close(p.sigma,0));
+});
+test('Gaussian downside and expected shortfall use stressed horizon volatility only',()=>{
+  const s=twoAssets(),r=calculate(s),horizonSigma=r.stressedSigma*r.horizonScale;
+  const z95=1.6448536269514722,z99=2.3263478740408408,pdf=z=>Math.exp(-z*z/2)/Math.sqrt(2*Math.PI);
+  assert.equal(r.stressedDownside,z95*r.stressedSigma*r.horizonScale);
+  close(r.stressedDownside99,z99*horizonSigma);
+  close(r.stressedExpectedShortfall95,pdf(z95)/.05*horizonSigma);
+  close(r.stressedExpectedShortfall99,pdf(z99)/.01*horizonSigma);
+  const rescaled=calculate({...s,days:1});
+  close(rescaled.stressedDownside99,r.stressedDownside99/Math.sqrt(365));
+  close(rescaled.stressedExpectedShortfall95,r.stressedExpectedShortfall95/Math.sqrt(365));
+  close(rescaled.stressedExpectedShortfall99,r.stressedExpectedShortfall99/Math.sqrt(365));
+});
+test('Gaussian tail metrics match independent one-asset and demo reference fixtures',()=>{
+  const one={...sampleState(),value:100000,days:365,baseCorrelation:0,stressCorrelation:0,multiplier:1,assets:[
+    {id:'one',symbol:'ONE',group:'bitcoin',weight:100,volatility:20,shock:-15}
+  ]};
+  const r=calculate(one);
+  close(r.stressedDownside,.32897072539029444,1e-12);
+  close(r.stressedDownside99,.46526957480816816,1e-12);
+  close(r.stressedExpectedShortfall95,.4125425615014855,1e-12);
+  close(r.stressedExpectedShortfall99,.5330428440691616,1e-12);
+  const demo=calculate(sampleState());
+  close(demo.stressedDownside,.3213084044023582,1e-12);
+  close(demo.stressedDownside99,.45443260801159013,1e-12);
+  close(demo.stressedExpectedShortfall95,.40293370185703076,1e-12);
+  close(demo.stressedExpectedShortfall99,.5206273157064641,1e-12);
+});
+test('Gaussian expected shortfall agrees with independent Simpson tail integration',()=>{
+  const simpson=(f,a,b,n=20000)=>{const h=(b-a)/n;let sum=f(a)+f(b);for(let i=1;i<n;i++)sum+=(i%2?4:2)*f(a+i*h);return sum*h/3;};
+  const pdf=x=>Math.exp(-x*x/2)/Math.sqrt(2*Math.PI);
+  const s=twoAssets(),r=calculate(s),sigma=r.stressedSigma*r.horizonScale;
+  for(const [z,tail,actual] of [[1.6448536269514722,.05,r.stressedExpectedShortfall95],[2.3263478740408408,.01,r.stressedExpectedShortfall99]]) {
+    const integral=simpson(x=>x*pdf(x),z,10);
+    close(integral/tail*sigma,actual,1e-9);
+  }
+});
+test('Gaussian tail metric ordering, scale, position-order and excluded-input properties',()=>{
+  const s=twoAssets(),r=calculate(s);
+  assert.ok(r.stressedDownside99>r.stressedDownside);
+  assert.ok(r.stressedExpectedShortfall95>=r.stressedDownside);
+  assert.ok(r.stressedExpectedShortfall99>=r.stressedDownside99);
+  assert.ok(r.stressedExpectedShortfall99>r.stressedExpectedShortfall95);
+  const scaledValue=s.value*3,scaled=calculate({...s,value:scaledValue});
+  for(const key of ['stressedDownside','stressedDownside99','stressedExpectedShortfall95','stressedExpectedShortfall99']) close(scaled[key],r[key],1e-12);
+  for(const key of ['stressedDownside','stressedDownside99','stressedExpectedShortfall95','stressedExpectedShortfall99']) close((scaled[key]*scaledValue)/(r[key]*s.value),3,1e-12);
+  const reversed=calculate({...s,assets:[...s.assets].reverse()});
+  for(const key of ['stressedDownside','stressedDownside99','stressedExpectedShortfall95','stressedExpectedShortfall99']) close(reversed[key],r[key],1e-12);
+  const altered=calculate({...s,multiplier:2.5,assets:s.assets.map((a,i)=>({...a,shock:i?80:-95}))});
+  for(const key of ['stressedDownside','stressedDownside99','stressedExpectedShortfall95','stressedExpectedShortfall99']) close(altered[key],r[key],1e-12);
 });
 test('single asset volatility independent of correlation',()=>{
   const s=twoAssets();s.assets=[{...s.assets[0],weight:100}];const r=calculate(s);
