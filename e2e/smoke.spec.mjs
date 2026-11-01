@@ -57,6 +57,7 @@ test('keeps summary metric definitions visible alongside dynamic details after s
   ];
 
   await expect(page.locator('#metric-drawdown')).toHaveText('29.45%');
+  await expect(page.locator('#metric-end')).toContainText('Ending value');
   for (const [definition, detailId] of definitions) {
     const detail = page.locator(detailId);
     await expect(detail.locator('..').locator('.metric-def')).toHaveText(definition);
@@ -69,6 +70,7 @@ test('keeps summary metric definitions visible alongside dynamic details after s
 
   await page.locator('#scenario').selectOption('depeg');
   await expect(page.locator('#metric-drawdown')).not.toHaveText('29.45%');
+  await expect(page.locator('#metric-end')).toContainText('Ending value');
   for (const [definition, detailId] of definitions) {
     const detail = page.locator(detailId);
     await expect(detail.locator('..').locator('.metric-def')).toHaveText(definition);
@@ -76,6 +78,107 @@ test('keeps summary metric definitions visible alongside dynamic details after s
   }
   dimensions = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
   expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+});
+
+test('enforces the 11px readable-text floor and responsive layout at supported widths', async ({ page }) => {
+  const floor = 11;
+  for (const width of [320, 375, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await openApp(page);
+    await expect(page.locator('#metric-drawdown')).toHaveText('29.45%');
+    await expect(page.locator('#metric-loss')).toHaveText('−$29,450.00');
+    await expect(page.locator('#metric-uplift')).toHaveText('+3.94 pp');
+    await expect(page.locator('#metric-effective')).toHaveText('3.08 / 4');
+
+    const audit = await page.evaluate(minimum => {
+      const offenders = [];
+      const isVisible = element => {
+        for (let current = element; current && current !== document.body; current = current.parentElement) {
+          const style = getComputedStyle(current);
+          if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+        }
+        return true;
+      };
+      const renderedFontSize = element => {
+        let size = Number.parseFloat(getComputedStyle(element).fontSize);
+        const svg = element.ownerSVGElement;
+        if (svg?.viewBox?.baseVal.width && svg?.viewBox?.baseVal.height) {
+          const box = svg.getBoundingClientRect();
+          const viewBox = svg.viewBox.baseVal;
+          size *= Math.min(box.width / viewBox.width, box.height / viewBox.height);
+        }
+        return size;
+      };
+
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        const textNode = walker.currentNode;
+        const text = textNode.nodeValue.trim();
+        const element = textNode.parentElement;
+        if (!text || !element || !isVisible(element)) continue;
+        const range = document.createRange();
+        range.selectNodeContents(textNode);
+        if (![...range.getClientRects()].some(rect => rect.width > 0 && rect.height > 0)) continue;
+        const size = renderedFontSize(element);
+        if (size < minimum) offenders.push({ text: text.slice(0, 50), selector: element.tagName.toLowerCase(), size: Number(size.toFixed(2)) });
+      }
+
+      for (const element of document.querySelectorAll('input:not([type="range"]):not([type="hidden"]):not([type="file"]), select, textarea')) {
+        const rect = element.getBoundingClientRect();
+        if (!element.value && !element.placeholder || !isVisible(element) || rect.width === 0 || rect.height === 0) continue;
+        const size = renderedFontSize(element);
+        if (size < minimum) offenders.push({ text: element.value || element.placeholder, selector: element.tagName.toLowerCase(), size: Number(size.toFixed(2)) });
+      }
+
+      const selectorSizes = [...document.querySelectorAll('.metric-detail, .metric-def, .input-help, .range-ends, .model-strip, .chart-footnote')]
+        .filter(element => isVisible(element) && element.getBoundingClientRect().width > 0)
+        .map(element => renderedFontSize(element));
+      const viewport = window.innerWidth;
+      const documentWidth = document.documentElement.scrollWidth;
+      const tableScroller = document.querySelector('.table-scroll');
+      const stickyHeader = tableScroller?.querySelector('thead th:first-child');
+      const currency = document.querySelector('#metric-loss');
+      const currencyStyle = getComputedStyle(currency);
+      const chartText = [...document.querySelectorAll('.chart text')].map(element => {
+        const svg = element.ownerSVGElement;
+        const box = element.getBBox();
+        const viewBox = svg.viewBox.baseVal;
+        return { text: element.textContent, x: box.x, y: box.y, right: box.x + box.width, bottom: box.y + box.height, width: viewBox.width, height: viewBox.height };
+      });
+      const visibleButtons = [...document.querySelectorAll('button')].filter(element => {
+        const rect = element.getBoundingClientRect();
+        return isVisible(element) && rect.width > 0 && rect.height > 0;
+      }).map(element => ({ text: element.innerText.trim(), height: element.getBoundingClientRect().height }));
+      return {
+        viewport,
+        documentWidth,
+        offenders,
+        selectorBelowFloor: selectorSizes.some(size => size < minimum),
+        tableOverflowX: getComputedStyle(tableScroller).overflowX,
+        tableScrollWidth: tableScroller.scrollWidth,
+        tableClientWidth: tableScroller.clientWidth,
+        stickyPosition: stickyHeader ? getComputedStyle(stickyHeader).position : null,
+        stickyLeft: stickyHeader ? getComputedStyle(stickyHeader).left : null,
+        currencyHeight: currency.getBoundingClientRect().height,
+        currencyLineHeight: Number.parseFloat(currencyStyle.lineHeight),
+        shortPhoneButtons: viewport <= 375 ? visibleButtons.filter(button => button.height < 44) : [],
+        chartTextOverflow: chartText.filter(text => text.x < -0.5 || text.y < -0.5 || text.right > text.width + 0.5 || text.bottom > text.height + 0.5)
+      };
+    }, floor);
+
+    expect(audit.documentWidth, `document overflow at ${width}px`).toBeLessThanOrEqual(width);
+    expect(audit.offenders, `visible text below ${floor}px at ${width}px`).toEqual([]);
+    expect(audit.selectorBelowFloor, `required selector below ${floor}px at ${width}px`).toBe(false);
+    expect(audit.chartTextOverflow, `SVG text outside chart viewBox at ${width}px`).toEqual([]);
+    if (width <= 375) {
+      expect(audit.shortPhoneButtons, `phone buttons below 44px at ${width}px`).toEqual([]);
+      expect(audit.currencyHeight).toBeLessThanOrEqual(audit.currencyLineHeight * 1.25);
+      expect(audit.tableScrollWidth).toBeGreaterThan(audit.tableClientWidth);
+      expect(audit.tableOverflowX).toBe('auto');
+      expect(audit.stickyPosition).toBe('sticky');
+      expect(audit.stickyLeft).toBe('0px');
+    }
+  }
 });
 
 test('restores the saved portfolio value after reload', async ({ page }) => {
@@ -342,6 +445,7 @@ test('untrusted symbols stay literal in preview and dialog is contained and keyb
   await page.locator('#import-json').focus();const chooserPromise=page.waitForEvent('filechooser');await page.keyboard.press('Enter');
   const chooser=await chooserPromise;await chooser.setFiles({name:'hostile.json',mimeType:'application/json',buffer:Buffer.from(jsonPortfolio(hostile))});
   await expect(page.locator('#import-dialog')).toBeVisible();await expect(page.locator('#import-assets')).toContainText('<img src=x>');await expect(page.locator('#import-assets img')).toHaveCount(0);
+  for(const id of ['#import-cancel','#import-confirm'])expect(await page.locator(id).evaluate(element=>element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
   await expect(page.locator('#import-cancel')).toBeFocused();await page.keyboard.press('Tab');await expect(page.locator('#import-confirm')).toBeFocused();
   const dimensions=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
   await page.keyboard.press('Escape');expect(errors).toEqual([]);expect(external).toEqual([]);
