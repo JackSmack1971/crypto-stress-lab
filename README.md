@@ -12,7 +12,7 @@ A standalone, browser-only crypto portfolio risk stress tester. Enter asset allo
 - Explicit weight normalization and validation, browser-local input persistence, and CSV export.
 - Responsive layouts for phones, tablets, and desktop browsers.
 
-Static HTML, CSS, and ES modules. No dependencies, build step, market feed, wallet connection, account connection, analytics, or trading functionality.
+Static HTML, CSS, and ES modules. No runtime dependencies; one dev dependency for browser tests. No build step, market feed, wallet connection, account connection, analytics, or trading functionality.
 
 ## Run locally
 
@@ -26,7 +26,7 @@ python -m http.server 8000 --bind 127.0.0.1 --directory dist
 
 Open http://127.0.0.1:8000 in your browser. On systems where Python 3 is named `python3`, use that command instead.
 
-Any static web server can serve the `dist` folder. No dependency installation is needed.
+Any static web server can serve the `dist` folder without installing app dependencies.
 
 ## Run checks
 
@@ -35,9 +35,12 @@ With a current Node.js LTS release installed:
 ```sh
 npm test
 npm run check
+npm run e2e
 ```
 
-The test suite contains 20 tests, including persistence restore, validation of malformed assets, CSV row generation, escaping and formula neutralization, and 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication. Browser verification details are recorded in VERIFICATION.md.
+Run `npm ci` to install the browser-test dependency and `npx playwright install chromium` once to install its browser. The Node test suite contains 20 tests, including persistence restore, validation of malformed assets, CSV row generation, escaping and formula neutralization, and 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication. The Playwright suite exercises the app in Chromium. Browser verification details are recorded in VERIFICATION.md.
+
+Set `PW_CHROME_PATH` to an installed Chrome or Chromium executable to use it instead of running `npx playwright install chromium` (for example, `PW_CHROME_PATH=/usr/bin/chromium npm run e2e`).
 
 ## Transfer to GitHub
 
@@ -90,7 +93,10 @@ dist/
 tests/
   engine.test.mjs        Deterministic calculation tests
   persistence.test.mjs   Persistence, malformed-state and CSV tests
-package.json             Test and syntax-check commands
+package.json             Unit-test, syntax-check, and browser-test commands
+package-lock.json        Pinned browser-test dependency tree
+playwright.config.mjs    Chromium smoke-test configuration
+e2e/                     Local static server and browser smoke tests
 .gitignore               Local data, environment, and platform exclusions
 README.md                Setup, GitHub transfer, model, and privacy notes
 VERIFICATION.md          Original implementation verification record
