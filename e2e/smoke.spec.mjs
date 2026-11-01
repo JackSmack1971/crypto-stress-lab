@@ -327,8 +327,10 @@ test('sensitivity heatmap selects metrics, marks nearest settings, and scrolls b
   expect(colors[2][1]).toBeGreaterThan(colors[2][0]);
   const scroll=page.locator('.heatmap-scroll');await scroll.focus();await expect(scroll).toBeFocused();
   await expect(scroll).toHaveAttribute('tabindex','0');
+  const scrollRange=await scroll.evaluate(element=>({scrollWidth:element.scrollWidth,clientWidth:element.clientWidth}));
+  expect(scrollRange.scrollWidth).toBeGreaterThan(scrollRange.clientWidth);
   const scrollBefore=await scroll.evaluate(element=>element.scrollLeft);await page.keyboard.press('ArrowRight');
-  expect(await scroll.evaluate(element=>element.scrollLeft)).toBeGreaterThan(scrollBefore);
+  await expect.poll(()=>scroll.evaluate(element=>element.scrollLeft),{timeout:2000}).toBeGreaterThan(scrollBefore);
   const contrast=await table.locator('tbody td').evaluateAll(cells=>cells.map(cell=>{
     const rgb=getComputedStyle(cell).color.match(/[\d.]+/g).slice(0,3).map(Number);
     const bg=getComputedStyle(cell).backgroundColor.match(/[\d.]+/g).slice(0,3).map(Number);
