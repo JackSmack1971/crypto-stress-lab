@@ -1,4 +1,4 @@
-import { PRESETS, GROUPS, sampleState, validate, calculate, normalizeWeights } from './engine.mjs';
+import { PRESETS, GROUPS, sampleState, validate, calculate, normalizeWeights, reverseStress } from './engine.mjs';
 import { restoreState, serializeCsv, toCsvRows } from './persistence.mjs';
 const $ = id => document.getElementById(id);
 const STORAGE_KEY = 'crypto-stress-lab:v1';
@@ -89,6 +89,21 @@ function renderResults(r) {
   $('table-return').textContent=signedPct(r.portfolioReturn);$('table-pnl').textContent=signedMoney(r.pnl);$('table-risk').textContent=r.stressedSigma===0?'—':'100.0%';
   scenarioChart(r);correlationChart(r);allocationChart(r);
 }
+function updateReverse() {
+  const mode=$('reverse-mode').value, unit=$('reverse-unit').value, select=$('reverse-selection');
+  const wrap=$('reverse-selection-wrap');wrap.hidden=mode==='portfolio';
+  const prior=select.value;select.replaceChildren();
+  const choices=mode==='asset'?state.assets.map(a=>[a.symbol,a.symbol]):mode==='group'?Object.entries(GROUPS):[];
+  for(const [value,label] of choices) select.add(new Option(label,value));
+  if(choices.some(([value])=>value===prior))select.value=prior;
+  const output=$('reverse-result');
+  try {
+    const reverse=reverseStress(state,{mode,selector:select.value,unit,target:numericValue($('reverse-target'))});
+    output.classList.remove('reverse-error');
+    if(!reverse.reachable){output.textContent=`Unreachable. Maximum loss for ${reverse.label} is ${pct(reverse.maxLoss)} (${money(reverse.maxLossUsd)}).`;return;}
+    output.textContent=`${reverse.label}: required uniform shock ${signedPct(reverse.requiredShock)} · P&L ${signedMoney(reverse.pnl)} · ending value ${money(reverse.endValue)}${reverse.atFloor?' · maximum loss (−100% floor)':''}.`;
+  } catch(error) { output.classList.add('reverse-error');output.textContent=error.message; }
+}
 function update() {
   updateLabels();
   const errors=validate(state);
@@ -99,7 +114,7 @@ function update() {
     ['metric-end','metric-loss-detail','metric-uplift-detail','metric-concentration'].forEach(id=>$(id).textContent='Waiting for valid inputs');
     $('analysis-status').textContent='Inputs need attention';$('save-status').textContent='Invalid edits · not saved';return;
   }
-  result=calculate(state);renderResults(result);save();
+  result=calculate(state);renderResults(result);updateReverse();save();
   $('analysis-status').textContent=result.capped?'Updated · losses capped at −100% per asset':'Updated · all assumptions applied';
 }
 $('asset-list').addEventListener('input',e=>{
@@ -140,3 +155,7 @@ $('export').addEventListener('click',()=>{
   const blob=new Blob(['\ufeff'+serializeCsv(rows)],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`crypto-stress-results-${new Date().toISOString().slice(0,10)}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Results and assumptions exported as CSV.');
 });
 syncControls();update();if(loadMessage)toast(loadMessage);
+$('reverse-mode').addEventListener('change',updateReverse);
+$('reverse-unit').addEventListener('change',updateReverse);
+$('reverse-selection').addEventListener('change',updateReverse);
+$('reverse-target').addEventListener('input',updateReverse);
