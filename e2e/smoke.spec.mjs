@@ -57,6 +57,7 @@ test('keeps summary metric definitions visible alongside dynamic details after s
   ];
 
   await expect(page.locator('#metric-drawdown')).toHaveText('29.45%');
+  await expect(page.locator('#metric-end')).toContainText('Ending value');
   for (const [definition, detailId] of definitions) {
     const detail = page.locator(detailId);
     await expect(detail.locator('..').locator('.metric-def')).toHaveText(definition);
@@ -69,6 +70,7 @@ test('keeps summary metric definitions visible alongside dynamic details after s
 
   await page.locator('#scenario').selectOption('depeg');
   await expect(page.locator('#metric-drawdown')).not.toHaveText('29.45%');
+  await expect(page.locator('#metric-end')).toContainText('Ending value');
   for (const [definition, detailId] of definitions) {
     const detail = page.locator(detailId);
     await expect(detail.locator('..').locator('.metric-def')).toHaveText(definition);
