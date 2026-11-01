@@ -12,6 +12,7 @@ A standalone, browser-only crypto portfolio risk stress tester. Enter asset allo
 - Sensitivity heatmap across stressed correlation and shock intensity for horizon volatility, 99% normal-model downside, or scenario return.
 - HHI, effective position count, equal-weight comparisons, and 95%/99% normal-model downside and expected shortfall using stressed volatility.
 - Explicit weight normalization and validation, browser-local input persistence, and CSV export.
+- Deterministic, versioned portfolio JSON export and strict import with preview and explicit replacement confirmation.
 - Responsive layouts for phones, tablets, and desktop browsers.
 
 Static HTML, CSS, and ES modules. No runtime dependencies; one dev dependency for browser tests. No build step, market feed, wallet connection, account connection, analytics, or trading functionality.
@@ -40,7 +41,7 @@ npm run check
 npm run e2e
 ```
 
-Run `npm ci` to install the browser-test dependency and `npx playwright install chromium` once to install its browser. The Node test suite contains 56 tests, including persistence restore, validation of malformed assets, CSV row generation, escaping and formula neutralization, 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication, reverse-stress and sensitivity fixtures and properties, and Gaussian tail-risk checks. The Playwright suite exercises the app in Chromium. Browser verification details are recorded in VERIFICATION.md.
+Run `npm ci` to install the browser-test dependency and `npx playwright install chromium` once to install its browser. The Node test suite contains 64 tests, including persistence restore, strict portfolio JSON import/export, validation of malformed assets, CSV row generation, escaping and formula neutralization, 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication, reverse-stress and sensitivity fixtures and properties, and Gaussian tail-risk checks. The Playwright suite exercises the app in Chromium. Browser verification details are recorded in VERIFICATION.md.
 
 Set `PW_CHROME_PATH` to an installed Chrome or Chromium executable to use it instead of running `npx playwright install chromium` (for example, `PW_CHROME_PATH=/usr/bin/chromium npm run e2e`).
 
@@ -87,6 +88,30 @@ Sample inputs are illustrative assumptions. Fees, slippage, liquidity, leverage,
 
 Inputs persist in browser-local storage when available. Invalid edits do not overwrite the last valid saved state. CSV exports include the assumptions and calculated results; tail-risk metrics are appended after the existing Limitations row, and all existing CSV rows remain unchanged and in the same order. Formula-like user strings are neutralized. Large P&L summary values use compact notation while exact values remain available in details, attribution, and exports.
 
+## Portfolio JSON import and export
+
+JSON files use an independent envelope with `schema: "crypto-stress-lab/portfolio"`, integer `schemaVersion: 1`, and a `portfolio` object. The portfolio has exactly these fields:
+
+| Field | Meaning and units |
+| --- | --- |
+| `value` | Starting portfolio value in USD, from 1 to 1,000,000,000,000 |
+| `days` | Risk horizon in whole days, from 1 to 365 |
+| `baseCorrelation` | Baseline common correlation as a fraction from 0 to 1 |
+| `stressCorrelation` | Stressed common correlation as a fraction from 0 to 1 |
+| `multiplier` | Shock intensity as a multiplier from 0 to 3 |
+| `preset` | `selloff`, `liquidity`, `depeg`, `rally`, or `custom` |
+| `assets` | 1–12 asset objects with the fields below |
+| `assets[].id` | Unique local asset identifier: 1–64 ASCII letters, digits, underscores, or hyphens |
+| `assets[].symbol` | Unique 1–12 character asset label; control characters are rejected |
+| `assets[].group` | One of `bitcoin`, `ethereum`, `altcoin`, `stable`, or `cash` |
+| `assets[].weight` | Portfolio allocation in percent units from 0 to 100; totals must be 100% within the app's existing tolerance |
+| `assets[].volatility` | Annual volatility assumption in percent units from 0 to 300 |
+| `assets[].shock` | Base scenario shock in percent units from −100 to 300 |
+
+The exported JSON excludes the local-storage `version` key, derived returns and risk values, and UI-only reverse-stress and heatmap selections. It is independent of the persisted-state schema; applying an import wraps the portfolio in the existing local-storage `version: 1` shape. Export uses fixed key order, two-space indentation, a final newline, and a fixed filename, with no timestamp, so identical inputs produce byte-identical JSON.
+
+Import accepts only this exact envelope and schema version 1. Unknown and future versions fail safely; supporting a later schema requires an explicit migration and tests. The parser checks a 65,536-byte UTF-8 limit before JSON parsing, requires fatal UTF-8 decoding, strips exactly one leading BOM, uses a strict field allowlist with no type coercion, and reports fix-oriented errors. Imported content is previewed and changes the portfolio only after explicit confirmation; cancel, Escape, malformed input, and invalid input do not update in-memory or saved state. Preview text is inserted as text, with no HTML interpretation or network access. The file is not authenticated or signed, and JavaScript `JSON.parse` retains the last of duplicate object keys, so duplicate keys cannot be reliably detected after parsing. CSV formula neutralization still applies to formula-like symbols in CSV exports.
+
 ## Files
 
 ```text
@@ -95,12 +120,13 @@ dist/
   style.css              Responsive dark theme
   app.mjs                Interactions, charts, saved inputs, CSV export
   engine.mjs             Pure portfolio calculations and input validation
-  persistence.mjs        Saved-state restore and CSV serialization helpers
+  persistence.mjs        Saved-state restore, CSV, and portfolio JSON helpers
 tests/
   engine.test.mjs        Deterministic calculation tests
   engine.reverse.test.mjs Reverse-stress fixtures and properties
   engine.sensitivity.test.mjs Correlation and intensity sensitivity grid tests
   persistence.test.mjs   Persistence, malformed-state and CSV tests
+  portfolio-json.test.mjs Strict versioned portfolio JSON tests
 package.json             Unit-test, syntax-check, and browser-test commands
 package-lock.json        Pinned browser-test dependency tree
 playwright.config.mjs    Chromium smoke-test configuration
