@@ -68,6 +68,24 @@ export function calculate(state) {
   const comparisons = Object.entries(PRESETS).map(([id,p])=>({id,name:p.name,return:weights.reduce((s,w,i)=>s+w*Math.max(-1,p.shocks[state.assets[i].group]/100*state.multiplier),0)}));
   return { portfolioReturn, pnl:state.value*portfolioReturn, endValue:state.value*(1+portfolioReturn), drawdown:Math.max(0,-portfolioReturn), baselineSigma, stressedSigma, equalSigma, hhi, effectiveAssets:1/hhi, horizonScale, baselineDownside:1.6448536269514722*baselineSigma*horizonScale, stressedDownside:1.6448536269514722*stressedSigma*horizonScale, stressedDownside99:NORMAL_99_Z*stressedSigma*horizonScale, stressedExpectedShortfall95:normalPdf(1.6448536269514722)/0.05*stressedSigma*horizonScale, stressedExpectedShortfall99:normalPdf(NORMAL_99_Z)/0.01*stressedSigma*horizonScale, equalReturn:equal.reduce((s,w,i)=>s+w*shocks[i],0), largestWeight:Math.max(...weights), assets, comparisons, curve:Array.from({length:21},(_,i)=>({rho:i/20,sigma:Math.sqrt(variance(weights,vols,i/20))*horizonScale})), capped:state.assets.some(a=>a.shock/100*state.multiplier < -1) };
 }
+export function sensitivityGrid(state) {
+  const errors = validate(state);
+  if (errors.length) throw new Error(errors.join('\n'));
+  const rho = Array.from({length:11},(_,i)=>i/10);
+  const intensity = Array.from({length:13},(_,j)=>j*0.25);
+  const weights = state.assets.map(a=>a.weight/100);
+  const vols = state.assets.map(a=>a.volatility/100);
+  const horizonScale = Math.sqrt(state.days/365);
+  const volByRho = rho.map(value=>Math.sqrt(variance(weights,vols,value))*horizonScale);
+  const var99ByRho = volByRho.map(value=>NORMAL_99_Z*value);
+  const volatility = intensity.map(()=>volByRho.slice());
+  const var99 = intensity.map(()=>var99ByRho.slice());
+  const scenarioReturn = intensity.map(multiplier=>{
+    const value=weights.reduce((sum,weight,i)=>sum+weight*Math.max(-1,state.assets[i].shock/100*multiplier),0);
+    return Array(rho.length).fill(value);
+  });
+  return { rho, intensity, volatility, var99, scenarioReturn };
+}
 export function reverseStress(state, options) {
   const errors = validate(state);
   if (errors.length) throw new Error(errors.join('\n'));
