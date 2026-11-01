@@ -261,6 +261,15 @@ test('exports deterministic portfolio JSON and disables export for invalid edits
   await page.locator('#portfolio-value').fill('');await expect(page.locator('#export-json')).toBeDisabled();
 });
 
+test('JSON export failures render a structured local error',async({page})=>{
+  const state=savedDemoState();state.preset='unsupported';
+  await page.addInitScript(saved=>localStorage.setItem('crypto-stress-lab:v1',JSON.stringify(saved)),state);await openApp(page);
+  await expect(page.locator('#export-json')).toBeDisabled();
+  await page.locator('#export-json').evaluate(button=>button.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+  await expect(page.locator('#portfolio-json-errors')).toContainText('portfolio.preset');
+  await expect(page.locator('#portfolio-json-errors')).not.toContainText('undefined');
+});
+
 test('valid JSON import previews safely, cancel and Escape do not write, confirmation applies',async({page})=>{
   await openApp(page);const original=await page.evaluate(()=>localStorage.getItem('crypto-stress-lab:v1'));
   const importButton=page.locator('#import-json'),fileInput=page.locator('#portfolio-json-file');

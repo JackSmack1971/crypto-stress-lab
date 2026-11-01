@@ -215,7 +215,7 @@ $('export-json').addEventListener('click',()=>{
   try {
     const blob=new Blob([serializePortfolio(state)],{type:'application/json;charset=utf-8'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='crypto-stress-lab-portfolio.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Portfolio configuration exported as JSON.');
-  } catch(error) { showImportErrors([error.message]); }
+  } catch(error) { showImportErrors([{path:'$',message:error.message}]); }
 });
 function showImportErrors(errors) {
   const region=$('portfolio-json-errors');region.replaceChildren();
@@ -244,15 +244,31 @@ $('import-json').addEventListener('click',()=>{showImportErrors([]);$('portfolio
 $('portfolio-json-file').addEventListener('change',async event=>{
   const input=event.currentTarget,file=input.files?.[0];input.value='';if(!file)return;
   if(file.size>MAX_IMPORT_BYTES){showImportErrors([{path:'$',message:`File exceeds the ${MAX_IMPORT_BYTES}-byte import limit.`}]);return;}
+  let bytes;
   try {
-    const bytes=await file.arrayBuffer();
-    const decoded=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+    bytes=await file.arrayBuffer();
+  } catch {
+    showImportErrors([{path:'$',message:'Could not read this JSON file.'}]);return;
+  }
+  let decoder;
+  try {
+    decoder=new TextDecoder('utf-8',{fatal:true});
+  } catch {
+    showImportErrors([{path:'$',message:'Could not read this JSON file.'}]);return;
+  }
+  let decoded;
+  try {
+    decoded=decoder.decode(bytes);
+  } catch(error) {
+    const message=error instanceof TypeError?'File is not valid UTF-8.':'Could not read this JSON file.';
+    showImportErrors([{path:'$',message}]);return;
+  }
+  try {
     const parsed=parsePortfolioImport(decoded);
     if(!parsed.ok){showImportErrors(parsed.errors);return;}
     previewPortfolio(parsed.portfolio);
-  } catch(error) {
-    const message=error instanceof TypeError?'File is not valid UTF-8.':'Could not read this JSON file.';
-    showImportErrors([{path:'$',message}]);
+  } catch {
+    showImportErrors([{path:'$',message:'Could not read this JSON file.'}]);
   }
 });
 $('import-cancel').addEventListener('click',()=>{$('import-dialog').close();});
