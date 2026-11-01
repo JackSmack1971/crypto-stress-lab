@@ -13,3 +13,4 @@
 @media(max-width:640px){.reverse-panel{padding:20px 17px}.reverse-controls{grid-template-columns:1fr}.reverse-controls input,.reverse-controls select{height:44px}}
 @media(max-width:640px){#metric-loss{font-size:clamp(16px,4.9vw,23px)}#metric-effective{font-size:clamp(20px,6vw,26px)}}
 @media(max-width:360px){.mini-metrics{gap:12px}.mini-metrics strong{font-size:22px}.downside-row{gap:5px}.downside-row>span{min-width:0}.downside-row strong{white-space:nowrap;flex-shrink:0}}
+.tail-risk-list{border-top:1px solid var(--border);margin-top:10px}.tail-risk-list>div{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #222c39;font-size:9px;color:var(--text-secondary)}.tail-risk-list strong{font-size:12px;font-weight:550;color:var(--text-primary);white-space:nowrap}

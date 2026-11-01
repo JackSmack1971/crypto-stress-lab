@@ -135,6 +135,7 @@ test('exports a BOM-prefixed CSV with headers, scenario, and neutralized formula
   expect(csv.startsWith('\uFEFF')).toBe(true);
   expect(csv).toContain('"Asset","Group","Weight %","Annual volatility %","Base shock %","Effective shock %","Scenario P&L USD","Stressed variance risk share %"');
   expect(csv).toContain('"Scenario","Broad selloff"');
+  expect(csv).toContain('"99% normal model downside %"');
   expect(csv).toContain('"\'=SUM(1)","bitcoin"');
 });
 
