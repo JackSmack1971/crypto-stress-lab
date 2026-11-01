@@ -41,7 +41,7 @@ npm run check
 npm run e2e
 ```
 
-Run `npm ci` to install the browser-test dependency and `npx playwright install chromium` once to install its browser. The Node test suite contains 64 tests, including persistence restore, strict portfolio JSON import/export, validation of malformed assets, CSV row generation, escaping and formula neutralization, 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication, reverse-stress and sensitivity fixtures and properties, and Gaussian tail-risk checks. The Playwright suite exercises the app in Chromium. Browser verification details are recorded in VERIFICATION.md.
+Run `npm ci` to install the browser-test dependency and `npx playwright install chromium` once to install its browser. The Node test suite contains 65 tests, including persistence restore, strict portfolio JSON import/export, validation of malformed assets, CSV row generation, escaping and formula neutralization, 300 deterministic portfolio fixtures compared with explicit covariance matrix multiplication, reverse-stress and sensitivity fixtures and properties, and Gaussian tail-risk checks. The Playwright suite exercises the app in Chromium. Browser verification details are recorded in VERIFICATION.md.
 
 Set `PW_CHROME_PATH` to an installed Chrome or Chromium executable to use it instead of running `npx playwright install chromium` (for example, `PW_CHROME_PATH=/usr/bin/chromium npm run e2e`).
 

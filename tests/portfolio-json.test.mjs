@@ -97,13 +97,36 @@ test('rejects wrong types, non-finite numeric values and out-of-range data witho
 });
 
 test('rejects invalid identifiers, symbols, groups, presets and named preset mismatches',()=>{
-  const duplicateSymbol=envelope();duplicateSymbol.portfolio.assets[1].symbol='btc';rejected(duplicateSymbol);
+  const duplicateSymbol=envelope();duplicateSymbol.portfolio.assets[1].symbol='btc';
+  const duplicateResult=rejected(duplicateSymbol);
+  assert.deepEqual(duplicateResult.errors,[{path:'portfolio.assets[1].symbol',message:'Use a symbol unique without regard to letter case.'}]);
   const duplicateId=envelope();duplicateId.portfolio.assets[1].id=duplicateId.portfolio.assets[0].id;rejected(duplicateId);
   for(const id of ['', 'a'.repeat(65),'has space','<bad>']){const bad=envelope();bad.portfolio.assets[0].id=id;rejected(bad);}
   for(const group of ['__proto__','toString']){const bad=envelope();bad.portfolio.assets[0].group=group;rejected(bad);}
   const preset=envelope();preset.portfolio.preset='unknown';rejected(preset);
   const mismatch=envelope();mismatch.portfolio.assets[0].shock=99;rejected(mismatch);
   for(const field of ['symbol','id']) for(const control of ['\u0000','\u001f','\u007f','\u009f']){const bad=envelope();bad.portfolio.assets[0][field]=`a${control}b`;rejected(bad);}
+});
+
+test('malformed asset entries and field values return validation errors without throwing',()=>{
+  const assetValues=[null,5,'x',[],{},true];
+  const validAsset=envelope().portfolio.assets[0];
+  for(const value of assetValues){
+    for(const assets of [[value],[validAsset,value]]){
+      const input=envelope();input.portfolio.assets=assets;
+      let result;assert.doesNotThrow(()=>{result=parsePortfolioImport(encode(input));});assert.equal(result.ok,false);
+    }
+    const input=envelope();input.portfolio.assets=value;
+    let result;assert.doesNotThrow(()=>{result=parsePortfolioImport(encode(input));});assert.equal(result.ok,false);
+  }
+  for(const field of ['id','symbol','group','weight','volatility','shock']) for(const value of assetValues){
+    const input=envelope();input.portfolio.preset='unsupported-probe';input.portfolio.assets[0][field]=value;
+    let result;assert.doesNotThrow(()=>{result=parsePortfolioImport(encode(input));});assert.equal(result.ok,false);
+  }
+  for(const assets of [[null],[validAsset,null]]){
+    const input=envelope();input.portfolio.assets=assets;
+    let result;assert.doesNotThrow(()=>{result=parsePortfolioImport(encode(input));});assert.equal(result.ok,false);
+  }
 });
 
 test('rejects own prototype-named keys without prototype mutation and collects errors',()=>{

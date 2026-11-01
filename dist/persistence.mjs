@@ -31,6 +31,7 @@ function mapValidationMessage(message) {
   if (assetMatch) {
     const path = `portfolio.assets[${Number(assetMatch[1])-1}]`;
     const detail = assetMatch[2];
+    if (detail.includes('asset symbols must be unique')) return [`${path}.symbol`,'Use a symbol unique without regard to letter case.'];
     const field = detail.includes('symbol') ? 'symbol' : detail.includes('group') ? 'group' : detail.includes('weight') ? 'weight' : detail.includes('volatility') ? 'volatility' : detail.includes('shock') ? 'shock' : '';
     return [field ? `${path}.${field}` : path, detail];
   }
@@ -96,9 +97,10 @@ export function parsePortfolioImport(text) {
       }
       const symbolKeys=new Set();
       portfolio.assets.forEach((asset,index)=>{
-        if(typeof asset.symbol==='string') {
-          if(!asset.symbol.trim()||asset.symbol.length>12) errors.push({path:`portfolio.assets[${index}].symbol`,message:'Use a non-empty symbol of at most 12 characters.'});
-          const key=asset.symbol.trim().toUpperCase();if(symbolKeys.has(key))errors.push({path:`portfolio.assets[${index}].symbol`,message:'Use a symbol unique without regard to letter case.'});symbolKeys.add(key);
+        if(isRecord(asset) && typeof asset.symbol==='string') {
+          const path=`portfolio.assets[${index}].symbol`;
+          if((!asset.symbol.trim()||asset.symbol.length>12) && !errors.some(error=>error.path===path)) errors.push({path,message:'Use a non-empty symbol of at most 12 characters.'});
+          const key=asset.symbol.trim().toUpperCase();if(symbolKeys.has(key) && !errors.some(error=>error.path===path))errors.push({path,message:'Use a symbol unique without regard to letter case.'});symbolKeys.add(key);
         }
       });
     }
