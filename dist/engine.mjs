@@ -66,6 +66,42 @@ export function calculate(state) {
   const comparisons = Object.entries(PRESETS).map(([id,p])=>({id,name:p.name,return:weights.reduce((s,w,i)=>s+w*Math.max(-1,p.shocks[state.assets[i].group]/100*state.multiplier),0)}));
   return { portfolioReturn, pnl:state.value*portfolioReturn, endValue:state.value*(1+portfolioReturn), drawdown:Math.max(0,-portfolioReturn), baselineSigma, stressedSigma, equalSigma, hhi, effectiveAssets:1/hhi, horizonScale, baselineDownside:1.6448536269514722*baselineSigma*horizonScale, stressedDownside:1.6448536269514722*stressedSigma*horizonScale, equalReturn:equal.reduce((s,w,i)=>s+w*shocks[i],0), largestWeight:Math.max(...weights), assets, comparisons, curve:Array.from({length:21},(_,i)=>({rho:i/20,sigma:Math.sqrt(variance(weights,vols,i/20))*horizonScale})), capped:state.assets.some(a=>a.shock/100*state.multiplier < -1) };
 }
+export function reverseStress(state, options) {
+  const errors = validate(state);
+  if (errors.length) throw new Error(errors.join('\n'));
+  const { mode, selector, unit = 'pct', target } = options ?? {};
+  if (!['portfolio', 'asset', 'group'].includes(mode)) throw new Error('Choose a valid exposure selection.');
+  if (!['pct', 'usd'].includes(unit)) throw new Error('Choose percent or USD as the target unit.');
+  if (typeof target !== 'number' || !Number.isFinite(target) || target <= 0 || (unit === 'pct' && target > 100) || (unit === 'usd' && target > state.value)) throw new Error('Target loss must be a finite positive amount within the portfolio value.');
+  let selected;
+  let label;
+  if (mode === 'portfolio') { selected = state.assets; label = 'Entire portfolio'; }
+  else if (mode === 'asset') {
+    selected = state.assets.filter(a => a.symbol === selector);
+    if (selected.length !== 1) throw new Error('Choose an asset in the portfolio.');
+    label = selected[0].symbol;
+  } else {
+    if (typeof selector !== 'string' || !Object.hasOwn(GROUPS, selector)) throw new Error('Choose a valid asset group.');
+    selected = state.assets.filter(a => a.group === selector);
+    label = GROUPS[selector];
+  }
+  const symbols = selected.map(a => a.symbol);
+  const exposure = selected.reduce((sum, a) => sum + a.weight / 100, 0);
+  const targetLoss = unit === 'pct' ? target / 100 : target / state.value;
+  const maxLoss = exposure;
+  const tolerance = 2e-8;
+  const reachable = exposure > 0 && targetLoss <= exposure + tolerance;
+  const requiredShock = reachable ? (targetLoss >= exposure - tolerance ? -1 : Math.max(-1, -targetLoss / exposure)) : null;
+  const loss = reachable && requiredShock !== -1 ? targetLoss : maxLoss;
+  const selectedSet = new Set(selected);
+  return {
+    mode, label, symbols, exposure, targetLoss, targetLossUsd: targetLoss * state.value,
+    reachable, requiredShock, pnl: reachable ? -loss * state.value : null, endValue: reachable ? state.value * (1 - loss) : null,
+    atFloor: reachable && requiredShock === -1,
+    maxLoss, maxLossUsd: maxLoss * state.value,
+    assets: state.assets.filter(a => selectedSet.has(a)).map(a => ({ symbol: a.symbol, effectiveShock: requiredShock, pnl: reachable ? state.value * (a.weight / 100) * requiredShock : null }))
+  };
+}
 export function normalizeWeights(assets) {
   const total = assets.reduce((s,a)=>s+a.weight,0);
   if (!finite(total) || total <= 0 || assets.some(a=>!finite(a.weight) || a.weight < 0)) throw new Error('Enter nonnegative weights with a positive total before normalizing.');
