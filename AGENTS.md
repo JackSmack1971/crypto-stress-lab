@@ -49,6 +49,7 @@ Use a skill from `.agents/skills/` when its description matches the task: `task-
 `performance-analysis`, `integration-testing`, `evidence-verification`, `idea-to-spec`, `frontend-development`,
 `backend-data-development`, `documentation-update`, `review-and-repair`, `commit-preparation`. Name `dependency-migration`,
 `release-readiness` or `control-plane-audit` only when the user asks for it (`$name`); they are explicit-only.
+See `.agents/skills/INTEGRATION.md` for the single project skill routing map and domain-specific routes.
 For L2/L3 work, run `evidence-verification`, then an independent review (`review-and-repair`): `/review` if the user runs it,
 else the `reviewer` agent; fix valid P0/P1 findings in at most two rounds and report what remains. The end-to-end sequence is
 `.codex/knowledge/task-workflow.md`. Skills, agents and review verdicts do not widen what the user authorized.

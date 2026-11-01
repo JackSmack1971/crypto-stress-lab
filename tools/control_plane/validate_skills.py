@@ -25,7 +25,8 @@ ROSTER = ["task-triage", "repository-recon", "architecture-design", "implementat
           "dependency-migration", "evidence-verification", "release-readiness", "control-plane-audit",
           # Added beyond BLUEPRINT 3.3 for the end-to-end workflow (agents-skills-mvp.md): ideation, UI, server/data, docs, review, commit.
           "idea-to-spec", "frontend-development", "backend-data-development", "documentation-update",
-          "review-and-repair", "commit-preparation", "workflow-coordination"]
+          "review-and-repair", "commit-preparation", "workflow-coordination",
+          "quantitative-risk-validation"]
 EXPLICIT_ONLY = {"dependency-migration", "release-readiness", "control-plane-audit"}  # BLUEPRINT 3.2
 POLICY_YAML = "policy:\n  allow_implicit_invocation: false\n"
 ALLOWED_KEYS = ("name", "description")
@@ -167,6 +168,8 @@ def load():
         return skills, [f"{SKILLS} not found"]
     for d in sorted(SKILLS.iterdir()):
         if not d.is_dir():
+            if d.name == "INTEGRATION.md":
+                continue  # Project-level routing map, not a skill package.
             errs.append(f"{d.name}: unexpected file in .agents/skills/")
             continue
         md = d / "SKILL.md"
